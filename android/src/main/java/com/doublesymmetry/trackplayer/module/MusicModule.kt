@@ -700,6 +700,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         callback.resolve(null)
     }
     
+    @ReactMethod
     fun setBrowseTree(mediaItems: ReadableMap, callback: Promise) = scope.launch {
         if (verifyServiceBoundOrReject(callback)) return@launch
         val mediaItemsMap = mediaItems.toHashMap()
