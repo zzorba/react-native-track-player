@@ -4,6 +4,7 @@ import {
   NativeEventEmitter,
   NativeModules,
   Platform,
+  Animated,
 } from 'react-native';
 // @ts-expect-error because resolveAssetSource is untyped
 import { default as resolveAssetSource } from 'react-native/Libraries/Image/resolveAssetSource';
@@ -28,6 +29,10 @@ const emitter =
   Platform.OS !== 'android'
     ? new NativeEventEmitter(TrackPlayer)
     : DeviceEventEmitter;
+
+const animatedVolume = new Animated.Value(1);
+
+animatedVolume.addListener((state) => TrackPlayer.setVolume(state.value));
 
 // MARK: - Helpers
 
@@ -357,6 +362,172 @@ export async function setVolume(level: number): Promise<void> {
   return TrackPlayer.setVolume(level);
 }
 
+/**
+ * Sets the volume of the player with a simple linear scaling.
+ * In Android this is achieved via a native thread call.
+ * In other platforms this is achieved via RN's Animated.Value.
+ *
+ * @param volume The volume as a number between 0 and 1.
+ * @param duration The duration of the animation in milliseconds. defualt is 500 ms.
+ * @param init The initial value of the volume. This may be useful eg to be 0 for a fade in event.
+ * @param interval The interval of the animation in milliseconds. default is 20 ms.
+ * @param msg (Android) The message to be emitted after volume is fully changed, via Event.PlaybackAnimatedVolumeChanged.
+ * @param callback (other platforms) The callback to be called after volume is fully changed.
+ */
+export const setAnimatedVolume = async ({
+  volume,
+  duration = 500,
+  init = -1,
+  interval = 20,
+  msg = '',
+  callback = () => undefined,
+}: {
+  volume: number;
+  duration?: number;
+  init?: number;
+  interval?: number;
+  msg?: string;
+  callback?: () => void | Promise<void>;
+}) => {
+  if (init !== -1) {
+    TrackPlayer.setVolume(init);
+  }
+  if (Platform.OS === 'android') {
+    TrackPlayer.setAnimatedVolume(volume, duration, interval, msg);
+  } else {
+    /*
+    TODO: Animated.value change relies on React rendering so Android
+    headlessJS will not work with it. however does iOS and windows work in the background?
+    if not this code block is needed 
+    if (AppState.currentState !== 'active') {
+      // need to figure out a way to run Animated.timing in background. probably needs our own module
+      duration = 0;
+    }
+    */
+    volume = Math.min(volume, 1);
+    if (duration === 0) {
+      animatedVolume.setValue(volume);
+      callback();
+      return;
+    }
+    animatedVolume.stopAnimation();
+    Animated.timing(animatedVolume, {
+      toValue: volume,
+      useNativeDriver: true,
+      duration,
+    }).start(() => callback());
+  }
+};
+
+/**
+ * performs fading out to pause playback.
+ * @param duration duration of the fade progress in ms
+ * @param interval interval of the fade progress in ms
+ */
+export const fadeOutPause = async (duration = 500, interval = 20) => {
+  if (Platform.OS === 'android') {
+    TrackPlayer.fadeOutPause(duration, interval);
+  } else {
+    setAnimatedVolume({
+      duration,
+      interval,
+      volume: 0,
+      callback: () => pause(),
+    });
+  }
+};
+
+/**
+ * performs fading into playing the next track.
+ * @param duration duration of the fade progress in ms
+ * @param interval interval of the fade progress in ms
+ * @param toVolume volume to fade into
+ */
+export const fadeOutNext = async (
+  duration = 500,
+  interval = 20,
+  toVolume = 1
+) => {
+  if (Platform.OS === 'android') {
+    TrackPlayer.fadeOutNext(duration, interval, toVolume);
+  } else {
+    setAnimatedVolume({
+      duration,
+      interval,
+      volume: 0,
+      callback: async () => {
+        await skipToNext();
+        setAnimatedVolume({
+          duration,
+          interval,
+          volume: toVolume,
+        });
+      },
+    });
+  }
+};
+
+/**
+ * performs fading into playing the previous track.
+ * @param duration duration of the fade progress in ms
+ * @param interval interval of the fade progress in ms
+ * @param toVolume volume to fade into
+ */
+export const fadeOutPrevious = async (
+  duration = 500,
+  interval = 20,
+  toVolume = 1
+) => {
+  if (Platform.OS === 'android') {
+    TrackPlayer.fadeOutPrevious(duration, interval, toVolume);
+  } else {
+    setAnimatedVolume({
+      duration,
+      interval,
+      volume: 0,
+      callback: async () => {
+        await skipToPrevious();
+        setAnimatedVolume({
+          duration,
+          interval,
+          volume: toVolume,
+        });
+      },
+    });
+  }
+};
+
+/**
+ * performs fading into skipping to a track.
+ * @param index the index of the track to skip to
+ * @param duration duration of the fade progress in ms
+ * @param interval interval of the fade progress in ms
+ * @param toVolume volume to fade into
+ */
+export const fadeOutJump = async (
+  index: number,
+  duration = 500,
+  interval = 20,
+  toVolume = 1
+) => {
+  if (Platform.OS === 'android') {
+    TrackPlayer.fadeOutJump(index, duration, interval, toVolume);
+  } else {
+    setAnimatedVolume({
+      duration,
+      interval,
+      volume: 0,
+      callback: async () => {
+        await skip(index);
+        setAnimatedVolume({
+          duration,
+          interval,
+          volume: toVolume,
+        });
+      },
+    });
+  }
+};
 /**
  * Sets the playback rate.
  *

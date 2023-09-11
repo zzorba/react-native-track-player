@@ -4,22 +4,25 @@ import TrackPlayer, { Event } from 'react-native-track-player';
 export async function PlaybackService() {
   TrackPlayer.addEventListener(Event.RemotePause, () => {
     console.log('Event.RemotePause');
-    TrackPlayer.pause();
+    TrackPlayer.fadeOutPause();
   });
 
   TrackPlayer.addEventListener(Event.RemotePlay, () => {
     console.log('Event.RemotePlay');
     TrackPlayer.play();
+    TrackPlayer.setAnimatedVolume({
+      volume: 1,
+    });
   });
 
   TrackPlayer.addEventListener(Event.RemoteNext, () => {
     console.log('Event.RemoteNext');
-    TrackPlayer.skipToNext();
+    TrackPlayer.fadeOutNext();
   });
 
   TrackPlayer.addEventListener(Event.RemotePrevious, () => {
     console.log('Event.RemotePrevious');
-    TrackPlayer.skipToPrevious();
+    TrackPlayer.fadeOutPrevious();
   });
 
   TrackPlayer.addEventListener(Event.RemoteJumpForward, async (event) => {
@@ -96,6 +99,10 @@ export async function PlaybackService() {
 
   TrackPlayer.addEventListener(Event.PlaybackMetadataReceived, (event) => {
     console.log('Event.PlaybackMetadataReceived', event);
+  });
+
+  TrackPlayer.addEventListener(Event.PlaybackAnimatedVolumeChanged, (event) => {
+    console.log('Event.PlaybackAnimatedVolumeChanged', event.data);
   });
 
   TrackPlayer.addEventListener(

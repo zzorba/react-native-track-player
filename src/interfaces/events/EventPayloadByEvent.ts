@@ -17,6 +17,7 @@ import type { RemotePlaySearchEvent } from './RemotePlaySearchEvent';
 import type { RemoteSeekEvent } from './RemoteSeekEvent';
 import type { RemoteSetRatingEvent } from './RemoteSetRatingEvent';
 import type { RemoteSkipEvent } from './RemoteSkipEvent';
+import type { PlaybackAnimatedVolumeChangedEvent } from './PlaybackAnimatedVolumeChangedEvent';
 import type { RemoteBrowseEvent } from './RemoteBrowseEvent';
 import type { RemoteCustomActionEvent } from './RemoteCustomActionEvent';
 
@@ -46,6 +47,7 @@ export interface EventPayloadByEvent {
   [Event.RemoteLike]: never;
   [Event.RemoteDislike]: never;
   [Event.RemoteBookmark]: never;
+  [Event.PlaybackAnimatedVolumeChanged]: PlaybackAnimatedVolumeChangedEvent;
   [Event.RemoteBrowse]: RemoteBrowseEvent;
   [Event.RemoteCustomAction]: RemoteCustomActionEvent;
 }
