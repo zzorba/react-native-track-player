@@ -393,7 +393,7 @@ export const setAnimatedVolume = async ({
     TrackPlayer.setVolume(init);
   }
   if (Platform.OS === 'android') {
-    TrackPlayer.setAnimatedVolume(volume, duration, interval, msg);
+    return TrackPlayer.setAnimatedVolume(volume, duration, interval, msg);
   } else {
     /*
     TODO: Animated.value change relies on React rendering so Android
