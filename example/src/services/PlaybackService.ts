@@ -115,6 +115,9 @@ export async function PlaybackService() {
 
   TrackPlayer.addEventListener(Event.PlaybackAnimatedVolumeChanged, (event) => {
     console.log('Event.PlaybackAnimatedVolumeChanged', event.data);
+
+    TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, (event) => {
+    console.log('Event.PlaybackProgressUpdated', event);
   });
 
   TrackPlayer.addEventListener(

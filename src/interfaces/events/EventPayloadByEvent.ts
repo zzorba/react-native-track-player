@@ -4,7 +4,8 @@ import type { PlaybackState } from '../PlaybackState';
 import type { PlaybackActiveTrackChangedEvent } from './PlaybackActiveTrackChangedEvent';
 import type { PlaybackErrorEvent } from './PlaybackErrorEvent';
 import type { PlaybackMetadataReceivedEvent } from './PlaybackMetadataReceivedEvent';
-import type { AudioCommonMetadataReceivedEvent } from './AudioCommonMetadataReceivedEvent';
+import type { AudioMetadataReceivedEvent } from './AudioMetadataReceivedEvent';
+import type { AudioCommonMetadataReceivedEvent } from './AudioMetadataReceivedEvent';
 import type { PlaybackPlayWhenReadyChangedEvent } from './PlaybackPlayWhenReadyChangedEvent';
 import type { PlaybackProgressUpdatedEvent } from './PlaybackProgressUpdatedEvent';
 import type { PlaybackQueueEndedEvent } from './PlaybackQueueEndedEvent';
@@ -22,7 +23,7 @@ import type { PlaybackAnimatedVolumeChangedEvent } from './PlaybackAnimatedVolum
 import type { RemoteBrowseEvent } from './RemoteBrowseEvent';
 import type { RemoteCustomActionEvent } from './RemoteCustomActionEvent';
 
-export interface EventPayloadByEvent {
+export type EventPayloadByEvent = {
   [Event.PlayerError]: PlayerErrorEvent;
   [Event.PlaybackState]: PlaybackState;
   [Event.PlaybackError]: PlaybackErrorEvent;
@@ -51,7 +52,16 @@ export interface EventPayloadByEvent {
   [Event.PlaybackAnimatedVolumeChanged]: PlaybackAnimatedVolumeChangedEvent;
   [Event.RemoteBrowse]: RemoteBrowseEvent;
   [Event.RemoteCustomAction]: RemoteCustomActionEvent;
-  [Event.MetadataChapterReceived]: AudioCommonMetadataReceivedEvent[];
-  [Event.MetadataTimedReceived]: AudioCommonMetadataReceivedEvent;
-  [Event.MetadataCommonReceived]: AudioCommonMetadataReceivedEvent[];
-}
+  [Event.MetadataChapterReceived]: AudioMetadataReceivedEvent;
+  [Event.MetadataTimedReceived]: AudioMetadataReceivedEvent;
+  [Event.MetadataCommonReceived]: AudioCommonMetadataReceivedEvent;
+};
+
+// eslint-disable-next-line
+type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
+
+export type EventPayloadByEventWithType = {
+  [K in keyof EventPayloadByEvent]: EventPayloadByEvent[K] extends never
+    ? { type: K }
+    : Simplify<EventPayloadByEvent[K] & { type: K }>;
+};
