@@ -94,7 +94,11 @@ class MusicService : HeadlessJsMediaService() {
                 activityIntent!!.data = Uri.parse("trackplayer://service-bound")
                 activityIntent.action = Intent.ACTION_VIEW
                 activityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                startActivity(activityIntent)
+                var activityOptions = ActivityOptions.makeBasic()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    activityOptions = activityOptions.setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                }
+                startActivity(activityIntent, activityOptions.toBundle())
             }
         }
         val extras = Bundle()
