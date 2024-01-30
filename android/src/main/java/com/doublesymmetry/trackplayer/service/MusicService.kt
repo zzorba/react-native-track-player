@@ -191,9 +191,17 @@ class MusicService : HeadlessJsMediaService() {
             notificationBuilder.foregroundServiceBehavior = NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
         }
         val notification = notificationBuilder.build()
-        startForeground(EMPTY_NOTIFICATION_ID, notification)
-        @Suppress("DEPRECATION")
-        stopForeground(true)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(EMPTY_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            startForeground(EMPTY_NOTIFICATION_ID, notification)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
     }
 
     @MainThread
@@ -924,7 +932,6 @@ class MusicService : HeadlessJsMediaService() {
     @MainThread
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-
         if (!::player.isInitialized) return
 
         when (appKilledPlaybackBehavior) {
