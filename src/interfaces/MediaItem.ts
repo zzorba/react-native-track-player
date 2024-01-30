@@ -11,4 +11,9 @@ export interface MediaItem {
   /** playable has 2 states: 1 as browsable, or any other as playable.  */
   playable: MediaItemPlayable.MediaBrowsable | string;
   groupTitle?: string;
+  contentStyle?: string;
+  childrenPlayableContentStyle?: string;
+  childrenBrowsableContentStyle?: string;
+  /** playbackProgress should contain a string representation of a number between 0 and 1 if present */
+  playbackProgress?: string;
 }

@@ -96,13 +96,11 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     private fun hashmapToMediaItem(hashmap: HashMap<String, String>): MediaItem {
-
         val mediaId = hashmap["mediaId"]
         val title = hashmap["title"]
         val subtitle = hashmap["subtitle"]
         val mediaUri = hashmap["mediaUri"]
         val iconUri = hashmap["iconUri"]
-        val groupTitle = hashmap["groupTitle"]
         val playableFlag = if (hashmap["playable"]?.toInt() == 1) MediaItem.FLAG_BROWSABLE else MediaItem.FLAG_PLAYABLE
 
         val mediaDescriptionBuilder = MediaDescriptionCompat.Builder()
@@ -111,13 +109,44 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         mediaDescriptionBuilder.setSubtitle(subtitle)
         mediaDescriptionBuilder.setMediaUri(if (mediaUri != null) Uri.parse(mediaUri) else null)
         mediaDescriptionBuilder.setIconUri(if (iconUri != null) Uri.parse(iconUri) else null)
-        if (groupTitle != null) {
-            val extras = Bundle()
+        val extras = Bundle()
+        hashmap["groupTitle"]?.let {
             extras.putString(
-                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE,
-                groupTitle)
-            mediaDescriptionBuilder.setExtras(extras)
+                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE, it)
         }
+        hashmap["contentStyle"]?.toInt()?.let {
+            extras.putInt(
+                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_SINGLE_ITEM, it)
+        }
+        hashmap["childrenPlayableContentStyle"]?.toInt()?.let {
+            extras.putInt(
+                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, it)
+        }
+        hashmap["childrenBrowsableContentStyle"]?.toInt()?.let {
+            extras.putInt(
+                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE, it)
+        }
+
+        // playbackProgress should contain a string representation of a number between 0 and 1 if present
+        hashmap["playbackProgress"]?.toDouble()?.let {
+            if (it > 0.98) {
+                extras.putInt(
+                    MediaConstants.DESCRIPTION_EXTRAS_KEY_COMPLETION_STATUS,
+                    MediaConstants.DESCRIPTION_EXTRAS_VALUE_COMPLETION_STATUS_FULLY_PLAYED)
+            } else if (it == 0.0) {
+                extras.putInt(
+                    MediaConstants.DESCRIPTION_EXTRAS_KEY_COMPLETION_STATUS,
+                    MediaConstants.DESCRIPTION_EXTRAS_VALUE_COMPLETION_STATUS_NOT_PLAYED)
+            } else {
+                extras.putInt(
+                    MediaConstants.DESCRIPTION_EXTRAS_KEY_COMPLETION_STATUS,
+                    MediaConstants.DESCRIPTION_EXTRAS_VALUE_COMPLETION_STATUS_PARTIALLY_PLAYED)
+                extras.putDouble(
+                    MediaConstants.DESCRIPTION_EXTRAS_KEY_COMPLETION_PERCENTAGE, it)
+            }
+        }
+
+        mediaDescriptionBuilder.setExtras(extras)
         return MediaItem(mediaDescriptionBuilder.build(), playableFlag)
     }
 
