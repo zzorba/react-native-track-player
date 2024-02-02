@@ -739,7 +739,9 @@ class MusicService : HeadlessJsMediaService() {
                             scope.launch {
                                 delay(stopForegroundGracePeriod.toLong() * 1000)
                                 if (shouldStopForeground()) {
-                                    Timber.d("Notification should have been stopped??")
+                                    @Suppress("DEPRECATION")
+                                    stopForeground(removeNotificationWhenNotOngoing)
+                                    Timber.d("Notification has been stopped")
                                 }
                             }
                         }
