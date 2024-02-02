@@ -728,6 +728,10 @@ class MusicService : HeadlessJsMediaService() {
                         notification = it.notification;
                         if (it.ongoing) {
                             if (player.playWhenReady) {
+                                if (sWakeLock?.isHeld != true) {
+                                    Timber.tag("RNTP").d("acquiring wakelock")
+                                    sWakeLock?.acquire()
+                                }
                                 startForegroundIfNecessary()
                             }
                         } else if (shouldStopForeground()) {
@@ -737,6 +741,10 @@ class MusicService : HeadlessJsMediaService() {
                             // user's queue is complete. This prevents the service from potentially
                             // being immediately destroyed once the player finishes playing media.
                             scope.launch {
+                                if (sWakeLock?.isHeld == true) {
+                                    Timber.tag("RNTP").d("releasing wakelock")
+                                    sWakeLock?.release()
+                                }
                                 delay(stopForegroundGracePeriod.toLong() * 1000)
                                 if (shouldStopForeground()) {
                                     @Suppress("DEPRECATION")

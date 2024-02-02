@@ -33,6 +33,7 @@ export const SetupService = async () => {
   await TrackPlayer.updateOptions({
     android: {
       appKilledPlaybackBehavior: DefaultAudioServiceBehaviour,
+      stopForegroundGracePeriod: 999999999,
     },
     // This flag is now deprecated. Please use the above to define playback mode.
     // stoppingAppPausesPlayback: true,

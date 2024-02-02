@@ -47,7 +47,7 @@
  public abstract class HeadlessJsMediaService extends MediaBrowserServiceCompat implements HeadlessJsTaskEventListener {
  
    private final Set<Integer> mActiveTasks = new CopyOnWriteArraySet<>();
-   private static @Nullable PowerManager.WakeLock sWakeLock;
+   public static @Nullable PowerManager.WakeLock sWakeLock;
 
 
 
