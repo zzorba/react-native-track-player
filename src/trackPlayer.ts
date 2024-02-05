@@ -243,8 +243,8 @@ export async function updateOptions({
     stopIcon: resolveImportedAsset(options.stopIcon),
     previousIcon: resolveImportedAsset(options.previousIcon),
     nextIcon: resolveImportedAsset(options.nextIcon),
-    rewindIcon: resolveImportedAsset(options.rewindIcon),
-    forwardIcon: resolveImportedAsset(options.forwardIcon),
+    // rewindIcon: resolveImportedAsset(options.rewindIcon),
+    // forwardIcon: resolveImportedAsset(options.forwardIcon),
   });
 }
 
