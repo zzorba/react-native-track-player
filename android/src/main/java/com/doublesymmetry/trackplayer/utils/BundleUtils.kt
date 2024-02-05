@@ -66,12 +66,12 @@ object BundleUtils {
 
     fun getCustomIcon(context: Context, options: Bundle, propertyName: String, defaultIcon: Int): Int {
         when (getIntOrNull(options, propertyName)) {
-            0 -> return R.drawable.heart_empty
-            1 -> return R.drawable.heart
+            0 -> return R.drawable.hearte_24px
+            1 -> return R.drawable.heart_24px
             2 -> return R.drawable.exo_media_action_repeat_all
             3 -> return R.drawable.exo_media_action_repeat_one
-            4 -> return R.drawable.shuffle
-            5 -> return R.drawable.suggest
+            4 -> return R.drawable.shuffle_24px
+            5 -> return R.drawable.ifl_24px
         }
         return getIcon(context, options, propertyName, defaultIcon)
     }
