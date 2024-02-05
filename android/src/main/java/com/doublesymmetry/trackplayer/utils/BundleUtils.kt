@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.support.v4.media.RatingCompat
+import com.doublesymmetry.trackplayer.R
 import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper
 
 /**
@@ -61,6 +62,18 @@ object BundleUtils {
         val helper = ResourceDrawableIdHelper.getInstance()
         val icon = helper.getResourceDrawableId(context, bundle.getString("uri"))
         return if (icon == 0) defaultIcon else icon
+    }
+
+    fun getCustomIcon(context: Context, options: Bundle, propertyName: String, defaultIcon: Int): Int {
+        when (getIntOrNull(options, propertyName)) {
+            0 -> return R.drawable.heart_empty
+            1 -> return R.drawable.heart
+            2 -> return R.drawable.exo_media_action_repeat_all
+            3 -> return R.drawable.exo_media_action_repeat_one
+            4 -> return R.drawable.shuffle
+            5 -> return R.drawable.suggest
+        }
+        return getIcon(context, options, propertyName, defaultIcon)
     }
 
     fun getIconOrNull(context: Context, options: Bundle, propertyName: String): Int? {

@@ -317,11 +317,11 @@ class MusicService : HeadlessJsMediaService() {
                     PREVIOUS(icon = previousIcon, isCompact = isCompact(it))
                 }
                 Capability.JUMP_FORWARD -> {
-                    val forwardIcon = BundleUtils.getIcon(this, options, "forwardIcon", TrackPlayerR.drawable.forward)
+                    val forwardIcon = BundleUtils.getCustomIcon(this, options, "forwardIcon", TrackPlayerR.drawable.forward)
                     FORWARD(icon = forwardIcon, isCompact = isCompact(it))
                 }
                 Capability.JUMP_BACKWARD -> {
-                    val backwardIcon = BundleUtils.getIcon(this, options, "rewindIcon", TrackPlayerR.drawable.rewind)
+                    val backwardIcon = BundleUtils.getCustomIcon(this, options, "rewindIcon", TrackPlayerR.drawable.rewind)
                     BACKWARD(icon = backwardIcon, isCompact = isCompact(it))
                 }
                 Capability.SEEK_TO -> {
@@ -332,7 +332,7 @@ class MusicService : HeadlessJsMediaService() {
         }.toMutableList()
         if (customActionsList != null) {
             for (customAction in customActionsList ?: emptyList()) {
-                val customIcon = BundleUtils.getIcon(this, customActions, customAction, TrackPlayerR.drawable.exo_media_action_repeat_all)
+                val customIcon = BundleUtils.getCustomIcon(this, customActions, customAction, TrackPlayerR.drawable.exo_media_action_repeat_all)
                 buttonsList.add(CUSTOM_ACTION(icon=customIcon, customAction = customAction))
             }
         }

@@ -58,10 +58,10 @@ export const SetupService = async () => {
         'customAction3',
         'customAction4',
       ],
-      customAction1: require('../assets/icons/heart.png'),
-      customAction2: require('../assets/icons/heart-outline.png'),
-      customAction3: require('../assets/icons/heart.png'),
-      customAction4: require('../assets/icons/heart-outline.png'),
+      customAction1: 1,
+      customAction2: 0,
+      customAction3: 2,
+      customAction4: 3,
     },
   });
   await TrackPlayer.setRepeatMode(DefaultRepeatMode);
