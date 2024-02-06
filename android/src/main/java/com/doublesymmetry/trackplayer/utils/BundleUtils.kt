@@ -68,8 +68,8 @@ object BundleUtils {
         when (getIntOrNull(options, propertyName)) {
             0 -> return R.drawable.hearte_24px
             1 -> return R.drawable.heart_24px
-            2 -> return R.drawable.exo_media_action_repeat_all
-            3 -> return R.drawable.exo_media_action_repeat_one
+            2 -> return R.drawable.baseline_repeat_24
+            3 -> return R.drawable.baseline_repeat_one_24
             4 -> return R.drawable.shuffle_24px
             5 -> return R.drawable.ifl_24px
         }
