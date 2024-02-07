@@ -764,4 +764,10 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         callback.resolve(null)
     }
 
+    @ReactMethod
+    fun setPlaybackState(mediaID: String, callback: Promise) = scope.launch {
+        if (verifyServiceBoundOrReject(callback)) return@launch
+        musicService.setPlaybackState(mediaID)
+        callback.resolve(null)
+    }
 }

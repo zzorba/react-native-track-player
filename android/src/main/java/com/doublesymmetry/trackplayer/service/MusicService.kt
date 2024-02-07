@@ -56,6 +56,10 @@ class MusicService : HeadlessJsMediaService() {
         MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
         MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
 
+    fun setPlaybackState(mediaID: String) {
+        player.setPlaybackState(mediaID)
+    }
+
     @ExperimentalCoroutinesApi
     override fun onCreate() {
         Timber.tag("GVA-RNTP").d("RNTP musicservice created.")
@@ -76,7 +80,7 @@ class MusicService : HeadlessJsMediaService() {
             rootHints: Bundle?
     ): BrowserRoot {
         // TODO: verify clientPackageName here.
-        Log.d("RNTP-AA", clientPackageName + " attempted to get Browsable root.")
+        Timber.tag("RNTP-AA").d(clientPackageName + " attempted to get Browsable root.")
         if (clientPackageName in arrayOf<String>(
                 "com.android.systemui",
                 "com.example.android.mediacontroller",

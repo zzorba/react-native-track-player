@@ -704,6 +704,18 @@ export async function setBrowseTree(
 }
 
 /**
+ * this method enables android auto playback progress tracking; see
+ * https://developer.android.com/training/cars/media#browse-progress-bar
+ * android only.
+ * @param mediaID the mediaID.
+ * @returns
+ */
+export async function setPlaybackState(mediaID: string): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  TrackPlayer.setPlaybackState(mediaID);
+}
+
+/**
  * Sets the content style of Android Auto (Android only).
  * there are list style and grid style. see https://developer.android.com/training/cars/media#apply_content_style .
  * the styles are applicable to browsable nodes and playable nodes. setting the args to true will yield the list style.
