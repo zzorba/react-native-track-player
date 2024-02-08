@@ -16,6 +16,8 @@ abstract class TrackMetadata {
     var genre: String? = null
     var duration: Long? = null
     var rating: RatingCompat? = null
+    var mediaId: String? = null
+
     open fun setMetadata(context: Context, bundle: Bundle?, ratingType: Int) {
         artwork = BundleUtils.getUri(context, bundle, "artwork")
         title = bundle!!.getString("title")
@@ -23,6 +25,7 @@ abstract class TrackMetadata {
         album = bundle.getString("album")
         date = bundle.getString("date")
         genre = bundle.getString("genre")
+        mediaId = bundle.getString("mediaId")
 
         duration = if (bundle.containsKey("duration")) {
             bundle.getDouble("duration").toMilliseconds()

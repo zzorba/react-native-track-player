@@ -28,7 +28,7 @@ class Track(context: Context, bundle: Bundle, ratingType: Int) : TrackMetadata()
 
     fun toAudioItem(): TrackAudioItem {
         return TrackAudioItem(this, type, uri.toString(), artist, title, album, artwork.toString(), duration,
-                AudioItemOptions(headers, userAgent, resourceId))
+                AudioItemOptions(headers, userAgent, resourceId), mediaId)
     }
 
     init {
