@@ -170,7 +170,7 @@ class MusicService : HeadlessJsMediaService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startTask(getTaskConfig(intent))
-        startAndStopEmptyNotificationToAvoidANR()
+        if (intent != null) startAndStopEmptyNotificationToAvoidANR()
         return START_STICKY
     }
 
