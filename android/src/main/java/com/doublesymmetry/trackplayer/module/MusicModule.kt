@@ -249,9 +249,13 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         val minBuffer =
             bundledData?.getDouble(MusicService.MIN_BUFFER_KEY)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_MIN_BUFFER_MS
-        val maxBuffer =
+        var maxBuffer =
             bundledData?.getDouble(MusicService.MAX_BUFFER_KEY)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_MAX_BUFFER_MS
+        if (maxBuffer < minBuffer) {
+            Timber.tag("RNTP").w("maxBuffer should not be smaller than minBuffer. setting max = min.")
+            maxBuffer = minBuffer
+        }
         val playBuffer =
             bundledData?.getDouble(MusicService.PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_BUFFER_FOR_PLAYBACK_MS
