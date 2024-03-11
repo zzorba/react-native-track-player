@@ -299,14 +299,29 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             MusicEvents(context),
             IntentFilter(EVENT_INTENT)
         )
-
-        Intent(context, MusicService::class.java).also { intent ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+        val musicModule = this
+        scope.launch {
+            var retries = 0
+            while (true) {
+                try {
+                    Intent(context, MusicService::class.java).also { intent ->
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            context.startForegroundService(intent)
+                        } else {
+                            context.startService(intent)
+                        }
+                        context.bindService(intent, musicModule, Context.BIND_AUTO_CREATE)
+                    }
+                    break
+                } catch (exception: Exception) {
+                    retries += 1
+                    Timber.tag("RNTP").w("Could not initialize service due to %s, await 500 ms...", exception)
+                    if (retries > 10) {
+                        throw exception
+                    }
+                    delay(500)
+                }
             }
-            context.bindService(intent, this, Context.BIND_AUTO_CREATE)
         }
     }
 
