@@ -30,7 +30,7 @@ const DemoAndroidAutoHierarchy: AndroidAutoBrowseTree = {
       iconUri: 'https://rntp.dev/example/Soul%20Searching.jpeg',
       mediaUri: 'https://rntp.dev/example/Soul%20Searching.mp3',
       groupTitle: 'RNTP Demo Group',
-      playbackProgress: '0.2',
+      playbackProgress: '0',
     },
     {
       mediaId: '2',
@@ -40,7 +40,7 @@ const DemoAndroidAutoHierarchy: AndroidAutoBrowseTree = {
       iconUri: 'https://rntp.dev/example/Lullaby%20(Demo).jpeg',
       mediaUri: 'https://rntp.dev/example/Lullaby%20(Demo).mp3',
       groupTitle: 'RNTP Demo Group',
-      playbackProgress: '0.3',
+      playbackProgress: '0',
     },
   ],
 };
