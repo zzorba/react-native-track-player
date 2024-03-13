@@ -50,8 +50,9 @@ export async function PlaybackService() {
       // For demonstration purposes, the mediaId of playable mediaItems in the content hierarchy
       // is set to its index, and thus we are able to use TrackPlayer.skip. It's recommended
       // users build their own playback methods and mediaIds to handle playback.
-      TrackPlayer.setPlaybackState(event.id);
-      TrackPlayer.skip(Number(event.id)).then(() => TrackPlayer.play());
+      await TrackPlayer.skip(Number(event.id));
+      await TrackPlayer.play();
+      //TrackPlayer.setPlaybackState(event.id);
     });
 
     TrackPlayer.addEventListener(Event.RemotePlaySearch, (event) => {

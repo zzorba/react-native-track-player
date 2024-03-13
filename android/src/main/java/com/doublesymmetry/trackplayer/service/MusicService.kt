@@ -57,6 +57,7 @@ class MusicService : HeadlessJsMediaService() {
 
     fun setPlaybackState(mediaID: String) {
         player.setPlaybackState(mediaID)
+        player.getMediaSession().mediaSession
     }
 
     @ExperimentalCoroutinesApi

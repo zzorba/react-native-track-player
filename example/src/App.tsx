@@ -156,7 +156,7 @@ function useSetupPlayer() {
       TrackPlayer.setBrowseTree(DemoAndroidAutoHierarchy);
       TrackPlayer.setBrowseTreeStyle(
         AndroidAutoContentStyle.CategoryList,
-        AndroidAutoContentStyle.Grid
+        AndroidAutoContentStyle.List
       );
       if (unmounted) return;
       setPlayerReady(true);
