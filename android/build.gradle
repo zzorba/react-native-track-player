@@ -53,17 +53,21 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.lovegaoshi:KotlinAudio:v2.0.0-APM11'
-    // used when building against local maven
-//    implementation "com.github.doublesymmetry:kotlin-audio:2.1.0"
-
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"
 
     // Make sure we're using androidx
-    implementation "androidx.core:core-ktx:1.13.0"
+    implementation "androidx.core:core-ktx:1.13.1"
     implementation "androidx.localbroadcastmanager:localbroadcastmanager:1.1.0"
     implementation "androidx.lifecycle:lifecycle-process:2.5.1"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
     implementation 'androidx.media:media:1.7.0'
+
+    implementation 'io.coil-kt:coil:2.2.0'
+    api 'com.google.android.exoplayer:exoplayer:2.19.1'
+    api 'com.google.android.exoplayer:extension-mediasession:2.19.1'
+    api 'com.jakewharton.timber:timber:5.0.1'
+
+    implementation 'androidx.test:rules:1.5.0'
+    implementation 'jp.wasabeef.transformers:coil:1.0.6'
 }
