@@ -1,7 +1,6 @@
 package com.doublesymmetry.trackplayer.module
 
 import android.content.*
-import android.media.MediaDescription
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -9,7 +8,6 @@ import android.net.Uri
 import android.support.v4.media.RatingCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaDescriptionCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.media.utils.MediaConstants
 import com.doublesymmetry.kotlinaudio.models.Capability
 import com.doublesymmetry.kotlinaudio.models.RepeatMode
@@ -249,12 +247,15 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         val minBuffer =
             bundledData?.getDouble(MusicService.MIN_BUFFER_KEY)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_MIN_BUFFER_MS
-        var maxBuffer =
+        val maxBuffer =
             bundledData?.getDouble(MusicService.MAX_BUFFER_KEY)?.toMilliseconds()?.toInt()
                 ?: DEFAULT_MAX_BUFFER_MS
         if (maxBuffer < minBuffer) {
-            Timber.tag("RNTP").w("maxBuffer should not be smaller than minBuffer. setting max = min.")
-            maxBuffer = minBuffer
+            promise.reject(
+                "min_buffer_error",
+                "The value for maxBuffer should be greater than or equal to minBuffer."
+            )
+            return
         }
         val playBuffer =
             bundledData?.getDouble(MusicService.PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt()
@@ -287,22 +288,20 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             return
         }
 
-        if (maxBuffer < minBuffer) {
-            promise.reject(
-                "min_buffer_error",
-                "The value for maxBuffer should be greater than or equal to minBuffer."
-            )
-            return
-        }
-
         playerSetUpPromise = promise
         playerOptions = bundledData
 
-
-        LocalBroadcastManager.getInstance(context).registerReceiver(
-            MusicEvents(context),
-            IntentFilter(EVENT_INTENT)
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(
+                MusicEvents(context),
+                IntentFilter(EVENT_INTENT), Context.RECEIVER_NOT_EXPORTED
+            )
+        } else {
+            context.registerReceiver(
+                MusicEvents(context),
+                IntentFilter(EVENT_INTENT)
+            )
+        }
         val musicModule = this
         scope.launch {
             var retries = 0
@@ -439,7 +438,6 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         if (musicService.tracks.isEmpty())
             callback.reject("no_current_item", "There is no current item in the player")
 
-        val context: ReactContext = context
         Arguments.toBundle(map)?.let {
             val track = bundleToTrack(it)
             musicService.updateNowPlayingMetadata(track)
@@ -699,7 +697,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     @ReactMethod
     fun getProgress(callback: Promise) = scope.launch {
         if (verifyServiceBoundOrReject(callback)) return@launch
-        var bundle = Bundle()
+        val bundle = Bundle()
         bundle.putDouble("duration", musicService.getDurationInSeconds());
         bundle.putDouble("position", musicService.getPositionInSeconds());
         bundle.putDouble("buffered", musicService.getBufferedPositionInSeconds());
