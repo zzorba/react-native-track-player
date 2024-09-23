@@ -1,5 +1,6 @@
 package com.doublesymmetry.trackplayer.module
 
+import android.annotation.SuppressLint
 import android.content.*
 import android.os.Build
 import android.os.Bundle
@@ -223,6 +224,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @ReactMethod
     fun setupPlayer(data: ReadableMap?, promise: Promise) {
         if (isServiceBound) {
