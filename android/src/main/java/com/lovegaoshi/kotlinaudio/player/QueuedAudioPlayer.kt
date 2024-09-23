@@ -5,6 +5,7 @@ import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.IllegalSeekPositionException
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.lovegaoshi.kotlinaudio.models.*
 import java.util.*
@@ -16,6 +17,22 @@ class QueuedAudioPlayer(
     options: PlayerOptions = PlayerOptions()
 ) : AudioPlayer(context, options) {
     private val queue = LinkedList<MediaItem>()
+
+    var repeatMode: RepeatMode
+        get() {
+            return when (exoPlayer.repeatMode) {
+                Player.REPEAT_MODE_ALL -> RepeatMode.ALL
+                Player.REPEAT_MODE_ONE -> RepeatMode.ONE
+                else -> RepeatMode.OFF
+            }
+        }
+        set(value) {
+            when (value) {
+                RepeatMode.ALL -> exoPlayer.repeatMode = Player.REPEAT_MODE_ALL
+                RepeatMode.ONE -> exoPlayer.repeatMode = Player.REPEAT_MODE_ONE
+                RepeatMode.OFF -> exoPlayer.repeatMode = Player.REPEAT_MODE_OFF
+            }
+        }
 
     val currentIndex
         get() = exoPlayer.currentMediaItemIndex

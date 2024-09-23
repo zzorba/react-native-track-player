@@ -13,6 +13,7 @@ data class PlayerOptions(
     val alwaysShowNext: Boolean = true,
     val handleAudioFocus: Boolean = true,
     var alwaysPauseOnInterruption: Boolean = true,
+    var repeatMode: RepeatMode = RepeatMode.ALL,
     val bufferOptions: BufferOptions = BufferOptions(null, null, null, null)
 )
 

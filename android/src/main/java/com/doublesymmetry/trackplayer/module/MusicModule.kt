@@ -10,9 +10,8 @@ import android.support.v4.media.RatingCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaDescriptionCompat
 import androidx.media.utils.MediaConstants
-import com.doublesymmetry.kotlinaudio.models.Capability
-import com.doublesymmetry.kotlinaudio.models.RepeatMode
-import com.doublesymmetry.trackplayer.extensions.NumberExt.Companion.toMilliseconds
+import com.lovegaoshi.kotlinaudio.models.Capability
+import com.lovegaoshi.kotlinaudio.models.RepeatMode
 import com.doublesymmetry.trackplayer.model.State
 import com.doublesymmetry.trackplayer.model.Track
 import com.doublesymmetry.trackplayer.module.MusicEvents.Companion.EVENT_INTENT
@@ -20,8 +19,7 @@ import com.doublesymmetry.trackplayer.service.MusicService
 import com.doublesymmetry.trackplayer.utils.AppForegroundTracker
 import com.doublesymmetry.trackplayer.utils.RejectionException
 import com.facebook.react.bridge.*
-import com.google.android.exoplayer2.DefaultLoadControl.*
-import com.google.android.exoplayer2.Player
+import androidx.media3.common.Player
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -244,51 +242,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             return
         }
 
-        // Validate buffer keys.
         val bundledData = Arguments.toBundle(data)
-        val minBuffer =
-            bundledData?.getDouble(MusicService.MIN_BUFFER_KEY)?.toMilliseconds()?.toInt()
-                ?: DEFAULT_MIN_BUFFER_MS
-        val maxBuffer =
-            bundledData?.getDouble(MusicService.MAX_BUFFER_KEY)?.toMilliseconds()?.toInt()
-                ?: DEFAULT_MAX_BUFFER_MS
-        if (maxBuffer < minBuffer) {
-            promise.reject(
-                "min_buffer_error",
-                "The value for maxBuffer should be greater than or equal to minBuffer."
-            )
-            return
-        }
-        val playBuffer =
-            bundledData?.getDouble(MusicService.PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt()
-                ?: DEFAULT_BUFFER_FOR_PLAYBACK_MS
-        val backBuffer =
-            bundledData?.getDouble(MusicService.BACK_BUFFER_KEY)?.toMilliseconds()?.toInt()
-                ?: DEFAULT_BACK_BUFFER_DURATION_MS
-
-        if (playBuffer < 0) {
-            promise.reject(
-                "play_buffer_error",
-                "The value for playBuffer should be greater than or equal to zero."
-            )
-            return
-        }
-
-        if (backBuffer < 0) {
-            promise.reject(
-                "back_buffer_error",
-                "The value for backBuffer should be greater than or equal to zero."
-            )
-            return
-        }
-
-        if (minBuffer < playBuffer) {
-            promise.reject(
-                "min_buffer_error",
-                "The value for minBuffer should be greater than or equal to playBuffer."
-            )
-            return
-        }
 
         playerSetUpPromise = promise
         playerOptions = bundledData
