@@ -23,6 +23,7 @@ import com.lovegaoshi.kotlinaudio.models.AudioItem2MediaItem
 import com.lovegaoshi.kotlinaudio.models.AudioItemTransitionReason
 import com.lovegaoshi.kotlinaudio.models.AudioPlayerState
 import com.lovegaoshi.kotlinaudio.models.MediaItem2AudioItem
+import com.lovegaoshi.kotlinaudio.models.MediaSessionCallback
 import com.lovegaoshi.kotlinaudio.models.PlayWhenReadyChangeData
 import com.lovegaoshi.kotlinaudio.models.PlaybackError
 import com.lovegaoshi.kotlinaudio.models.PlayerOptions
@@ -49,8 +50,12 @@ abstract class AudioPlayer internal constructor(
     var player: ForwardingPlayer
     private val scope = MainScope()
     private var cache: SimpleCache? = null
-    private val playerEventHolder = PlayerEventHolder()
+    val playerEventHolder = PlayerEventHolder()
     private val focusManager = FocusManager(context, listener=this, options=options)
+
+    var alwaysPauseOnInterruption: Boolean
+        get() = focusManager.alwaysPauseOnInterruption
+        set(v) { focusManager.alwaysPauseOnInterruption = v }
 
     open val currentItem: AudioItem?
         get() = MediaItem2AudioItem(exoPlayer.currentMediaItem)
@@ -187,15 +192,50 @@ abstract class AudioPlayer internal constructor(
                 }
                 return super.getAvailableCommands()
             }
-
             override fun play() {
-                // Add custom logic
-                super.play()
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PLAY)
             }
-            override fun setPlayWhenReady(playWhenReady: Boolean) {
-                // Add custom logic
-                super.setPlayWhenReady(playWhenReady)
+
+            override fun pause() {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PAUSE)
             }
+
+            override fun seekToNext() {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.NEXT)
+            }
+
+            override fun seekToPrevious() {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PREVIOUS)
+            }
+
+            override fun seekForward() {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.FORWARD)
+            }
+
+            override fun seekBack() {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.REWIND)
+            }
+
+            override fun stop() {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.STOP)
+            }
+
+            override fun seekTo(mediaItemIndex: Int, positionMs: Long) {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(
+                    MediaSessionCallback.SEEK(
+                        positionMs
+                    )
+                )
+            }
+
+            override fun seekTo(positionMs: Long) {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(
+                    MediaSessionCallback.SEEK(
+                        positionMs
+                    )
+                )
+            }
+
         }
     }
 

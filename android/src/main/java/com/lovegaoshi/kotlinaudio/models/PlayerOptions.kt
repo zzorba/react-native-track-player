@@ -9,7 +9,7 @@ data class PlayerOptions(
     val cacheSize: Long = 0,
     val audioContentType: Int = 0,
     val wakeMode: Int = 0,
-    val handleAudioBecomingNoisy: Boolean = false,
+    val handleAudioBecomingNoisy: Boolean = true,
     val alwaysShowNext: Boolean = true,
     val handleAudioFocus: Boolean = true,
     var alwaysPauseOnInterruption: Boolean = true,

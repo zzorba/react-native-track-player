@@ -89,7 +89,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     private fun bundleToTrack(bundle: Bundle): Track {
-        return Track(context, bundle, musicService.ratingType)
+        return Track(context, bundle, 0)
     }
 
     private fun hashmapToMediaItem(hashmap: HashMap<String, String>): MediaItem {
@@ -380,7 +380,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             } else {
                 val context: ReactContext = context
                 val track = musicService.tracks[index]
-                track.setMetadata(context, Arguments.toBundle(map), musicService.ratingType)
+                track.setMetadata(context, Arguments.toBundle(map), 0)
                 musicService.updateMetadataForTrack(index, track)
 
                 callback.resolve(null)
@@ -712,9 +712,6 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         val mediaItemsMap = mediaItems.toHashMap()
         musicService.mediaTree = mediaItemsMap.mapValues { readableArrayToMediaItems(it.value as ArrayList<HashMap<String, String>>) }
         Timber.d("refreshing browseTree")
-        mediaItemsMap.keys.forEach {
-            musicService.notifyChildrenChanged(it)
-        }
         callback.resolve(musicService.mediaTree.toString())
     }
 
@@ -740,7 +737,6 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     @ReactMethod
     fun setPlaybackState(mediaID: String, callback: Promise) = scope.launch {
         if (verifyServiceBoundOrReject(callback)) return@launch
-        musicService.setPlaybackState(mediaID)
         callback.resolve(null)
     }
 }

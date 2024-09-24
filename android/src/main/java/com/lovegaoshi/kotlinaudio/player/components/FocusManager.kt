@@ -15,6 +15,7 @@ class FocusManager (
     private val options: PlayerOptions
 ) {
     var hasAudioFocus = false
+    var alwaysPauseOnInterruption = options.alwaysPauseOnInterruption
     private var focus: AudioFocusRequestCompat? = null
 
     fun requestAudioFocus() {
@@ -31,7 +32,7 @@ class FocusManager (
                     .setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC)
                     .build()
             )
-            .setWillPauseWhenDucked(options.alwaysPauseOnInterruption)
+            .setWillPauseWhenDucked(alwaysPauseOnInterruption)
             .build()
 
         val result: Int = if (manager != null && focus != null) {

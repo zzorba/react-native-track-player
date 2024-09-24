@@ -17,9 +17,9 @@ import androidx.annotation.MainThread
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.PRIORITY_LOW
 import androidx.media.utils.MediaConstants
-import com.doublesymmetry.kotlinaudio.models.*
-import com.doublesymmetry.kotlinaudio.models.NotificationButton.*
-import com.doublesymmetry.kotlinaudio.players.QueuedAudioPlayer
+import androidx.media3.session.MediaSession
+import com.lovegaoshi.kotlinaudio.models.*
+import com.lovegaoshi.kotlinaudio.player.QueuedAudioPlayer
 import com.doublesymmetry.trackplayer.HeadlessJsMediaService
 import com.doublesymmetry.trackplayer.extensions.NumberExt.Companion.toMilliseconds
 import com.doublesymmetry.trackplayer.extensions.NumberExt.Companion.toSeconds
@@ -42,22 +42,19 @@ import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 import com.doublesymmetry.trackplayer.R as TrackPlayerR
-import com.google.android.exoplayer2.ui.R as ExoPlayerR
+import androidx.media3.ui.R as ExoPlayerR
 
 @MainThread
 class MusicService : HeadlessJsMediaService() {
     private lateinit var player: QueuedAudioPlayer
     private val binder = MusicBinder()
     private val scope = MainScope()
+    lateinit var mediaSession: MediaLibrarySession
     private var progressUpdateJob: Job? = null
     var mediaTree: Map<String, List<MediaItem>> = HashMap()
     var mediaTreeStyle: List<Int> = listOf(
         MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
         MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
-
-    fun setPlaybackState(mediaID: String) {
-        player.setPlaybackState(mediaID)
-    }
 
     @ExperimentalCoroutinesApi
     override fun onCreate() {
@@ -71,63 +68,6 @@ class MusicService : HeadlessJsMediaService() {
     @Deprecated("This will be removed soon")
     var stoppingAppPausesPlayback = true
         private set
-
-    @SuppressLint("VisibleForTests")
-    override fun onGetRoot(
-            clientPackageName: String,
-            clientUid: Int,
-            rootHints: Bundle?
-    ): BrowserRoot {
-        // TODO: verify clientPackageName here.
-        Timber.tag("RNTP-AA").d("%s attempted to get Browsable root.", clientPackageName)
-        if (clientPackageName in arrayOf<String>(
-                "com.android.systemui",
-                "com.example.android.mediacontroller",
-                "com.google.android.projection.gearhead"
-        )) {
-            val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
-            if (
-                // HACK: validate reactActivity is present; if not, send wake intent
-                (reactActivity == null || reactActivity.isDestroyed)
-                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && Settings.canDrawOverlays(this)
-                ) {
-                Timber.tag("RNTP-AA")
-                    .d("%s is in the white list of waking activity.", clientPackageName)
-                val activityIntent = packageManager.getLaunchIntentForPackage(packageName)
-                activityIntent!!.data = Uri.parse("trackplayer://service-bound")
-                activityIntent.action = Intent.ACTION_VIEW
-                activityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                var activityOptions = ActivityOptions.makeBasic()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    activityOptions = activityOptions.setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                }
-                startActivity(activityIntent, activityOptions.toBundle())
-            }
-        }
-        val extras = Bundle()
-        extras.putInt(
-            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
-            mediaTreeStyle[0]
-        )
-        extras.putInt(
-            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
-            mediaTreeStyle[1]
-        )
-        return BrowserRoot("/", extras)
-    }
-
-    override fun onLoadChildren(
-            parentMediaId: String,
-            result: Result<List<MediaItem>>
-    ) {
-        Timber.tag("GVA-RNTP").d("RNTP received loadChildren req: %s", parentMediaId)
-
-        emit(MusicEvents.BUTTON_BROWSE, Bundle().apply {
-            putString("mediaId", parentMediaId)
-        });
-        result.sendResult(mediaTree[parentMediaId])
-    }
 
     enum class AppKilledPlaybackBehavior(val string: String) {
         CONTINUE_PLAYBACK("continue-playback"), PAUSE_PLAYBACK("pause-playback"), STOP_PLAYBACK_AND_REMOVE_NOTIFICATION("stop-playback-and-remove-notification")
@@ -145,17 +85,12 @@ class MusicService : HeadlessJsMediaService() {
     val state
         get() = player.playerState
 
-    var ratingType: Int
-        get() = player.ratingType
-        set(value) {
-            player.ratingType = value
-        }
 
     val playbackError
         get() = player.playbackError
 
     val event
-        get() = player.event
+        get() = player.playerEventHolder
 
     var playWhenReady: Boolean
         get() = player.playWhenReady
@@ -169,6 +104,7 @@ class MusicService : HeadlessJsMediaService() {
     private var compactCapabilities: List<Capability> = emptyList()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         startTask(getTaskConfig(intent))
         if (intent != null) startAndStopEmptyNotificationToAvoidANR()
         return START_STICKY
@@ -215,60 +151,31 @@ class MusicService : HeadlessJsMediaService() {
             return
         }
 
-        val bufferConfig = BufferConfig(
-            playerOptions?.getDouble(MIN_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-            playerOptions?.getDouble(MAX_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-            playerOptions?.getDouble(PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-            playerOptions?.getDouble(BACK_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-        )
-
-        val cacheConfig = CacheConfig(playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong())
-        val playerConfig = PlayerConfig(
-            interceptPlayerActionsTriggeredExternally = true,
-            handleAudioBecomingNoisy = true,
-            handleAudioFocus = playerOptions?.getBoolean(AUTO_HANDLE_INTERRUPTIONS) ?: false,
+        val mPlayerOptions = PlayerOptions(
+            cacheSize = playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong() ?: 0,
             audioContentType = when(playerOptions?.getString(ANDROID_AUDIO_CONTENT_TYPE)) {
-                "music" -> AudioContentType.MUSIC
-                "speech" -> AudioContentType.SPEECH
-                "sonification" -> AudioContentType.SONIFICATION
-                "movie" -> AudioContentType.MOVIE
-                "unknown" -> AudioContentType.UNKNOWN
-                else -> AudioContentType.MUSIC
-            }
+                "music" -> 0
+                "speech" -> 1
+                "sonification" -> 2
+                "movie" -> 3
+                "unknown" -> 4
+                else -> 0
+            },
+            handleAudioFocus = playerOptions?.getBoolean(AUTO_HANDLE_INTERRUPTIONS) ?: true,
+            handleAudioBecomingNoisy = true,
+            bufferOptions = BufferOptions(
+                playerOptions?.getDouble(MIN_BUFFER_KEY)?.toMilliseconds()?.toInt(),
+                playerOptions?.getDouble(MAX_BUFFER_KEY)?.toMilliseconds()?.toInt(),
+                playerOptions?.getDouble(PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt(),
+                playerOptions?.getDouble(BACK_BUFFER_KEY)?.toMilliseconds()?.toInt(),)
+
         )
 
-        val automaticallyUpdateNotificationMetadata = playerOptions?.getBoolean(AUTO_UPDATE_METADATA, true) ?: true
-        val mediaSessionCallback = object: AAMediaSessionCallBack {
-            override fun handlePlayFromMediaId(mediaId: String?, extras: Bundle?) {
-                Timber.tag("GVA-RNTP").d("RNTP received req to play from mediaID: %s", mediaId)
-                val emitBundle = extras ?: Bundle()
-                emit(MusicEvents.BUTTON_PLAY_FROM_ID, emitBundle.apply {
-                    putString("id", mediaId)
-                })
-            }
-
-            override fun handlePlayFromSearch(query: String?, extras: Bundle?) {
-                Timber.tag("GVA-RNTP").d("RNTP received req to play from query: %s", query)
-                val emitBundle = extras ?: Bundle()
-                emit(MusicEvents.BUTTON_PLAY_FROM_SEARCH, emitBundle.apply {
-                    putString("query", query)
-                })
-            }
-
-            override fun handleSkipToQueueItem(id: Long) {
-                Timber.tag("GVA-RNTP").d("RNTP received req to play from queue index: %d", id)
-                val emitBundle = Bundle()
-                emit(MusicEvents.BUTTON_SKIP, emitBundle.apply {
-                    putInt("index", id.toInt())
-                })
-            }
-            override fun handleCustomActions(action: String?, extras: Bundle?) {
-                Timber.tag("GVA-RNTP").d("RNTP received req to play from queue index: %s", action)
-            }
-        }
-        player = QueuedAudioPlayer(this@MusicService, playerConfig, bufferConfig, cacheConfig, mediaSessionCallback)
-        player.automaticallyUpdateNotificationMetadata = automaticallyUpdateNotificationMetadata
-        sessionToken = player.getMediaSessionToken()
+        player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
+        mediaSession = MediaLibrarySession
+            .Builder(this, player.player, APMMediaSessionCallback(arrayListOf()))
+            // .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
+            .build()
         observeEvents()
         setupForegrounding()
     }
@@ -290,70 +197,7 @@ class MusicService : HeadlessJsMediaService() {
             }
         }
 
-        ratingType = BundleUtils.getInt(options, "ratingType", RatingCompat.RATING_NONE)
-
-        player.playerOptions.alwaysPauseOnInterruption = androidOptions?.getBoolean(PAUSE_ON_INTERRUPTION_KEY) ?: false
-
-        capabilities = options.getIntegerArrayList("capabilities")?.map { Capability.values()[it] } ?: emptyList()
-        notificationCapabilities = options.getIntegerArrayList("notificationCapabilities")?.map { Capability.values()[it] } ?: emptyList()
-        compactCapabilities = options.getIntegerArrayList("compactCapabilities")?.map { Capability.values()[it] } ?: emptyList()
-        val customActions = options.getBundle(CUSTOM_ACTIONS_KEY)
-        val customActionsList = customActions?.getStringArrayList(CUSTOM_ACTIONS_LIST_KEY)
-        if (notificationCapabilities.isEmpty()) notificationCapabilities = capabilities
-        Timber.tag("customactions debug").d(customActionsList.toString())
-        val buttonsList = notificationCapabilities.mapNotNull {
-            when (it) {
-                Capability.PLAY, Capability.PAUSE -> {
-                    val playIcon = BundleUtils.getIconOrNull(this, options, "playIcon")
-                    val pauseIcon = BundleUtils.getIconOrNull(this, options, "pauseIcon")
-                    PLAY_PAUSE(playIcon = playIcon, pauseIcon = pauseIcon)
-                }
-                Capability.STOP -> {
-                    val stopIcon = BundleUtils.getIconOrNull(this, options, "stopIcon")
-                    STOP(icon = stopIcon)
-                }
-                Capability.SKIP_TO_NEXT -> {
-                    val nextIcon = BundleUtils.getIconOrNull(this, options, "nextIcon")
-                    NEXT(icon = nextIcon, isCompact = isCompact(it))
-                }
-                Capability.SKIP_TO_PREVIOUS -> {
-                    val previousIcon = BundleUtils.getIconOrNull(this, options, "previousIcon")
-                    PREVIOUS(icon = previousIcon, isCompact = isCompact(it))
-                }
-                Capability.JUMP_FORWARD -> {
-                    val forwardIcon = BundleUtils.getCustomIcon(this, options, "forwardIcon", TrackPlayerR.drawable.forward)
-                    FORWARD(icon = forwardIcon, isCompact = isCompact(it))
-                }
-                Capability.JUMP_BACKWARD -> {
-                    val backwardIcon = BundleUtils.getCustomIcon(this, options, "rewindIcon", TrackPlayerR.drawable.rewind)
-                    BACKWARD(icon = backwardIcon, isCompact = isCompact(it))
-                }
-                Capability.SEEK_TO -> {
-                    SEEK_TO
-                }
-                else -> { null }
-            }
-        }.toMutableList()
-        if (customActionsList != null) {
-            for (customAction in customActionsList ?: emptyList()) {
-                val customIcon = BundleUtils.getCustomIcon(this, customActions, customAction, TrackPlayerR.drawable.exo_media_action_repeat_all)
-                buttonsList.add(CUSTOM_ACTION(icon=customIcon, customAction = customAction))
-            }
-        }
-
-        val openAppIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            // Add the Uri data so apps can identify that it was a notification click
-            data = Uri.parse("trackplayer://notification.click")
-            action = Intent.ACTION_VIEW
-        }
-
-        val accentColor = BundleUtils.getIntOrNull(options, "color")
-        val smallIcon = BundleUtils.getIconOrNull(this, options, "icon")
-        val pendingIntent = PendingIntent.getActivity(this, 0, openAppIntent, getPendingIntentFlags())
-        val notificationConfig = NotificationConfig(buttonsList, accentColor, smallIcon, pendingIntent)
-
-        player.notificationManager.createNotification(notificationConfig)
+        player.alwaysPauseOnInterruption = androidOptions?.getBoolean(PAUSE_ON_INTERRUPTION_KEY) ?: false
 
         // setup progress update events if configured
         progressUpdateJob?.cancel()
@@ -510,11 +354,11 @@ class MusicService : HeadlessJsMediaService() {
     }
 
     @MainThread
-    fun getRepeatMode(): RepeatMode = player.playerOptions.repeatMode
+    fun getRepeatMode(): RepeatMode = player.repeatMode
 
     @MainThread
     fun setRepeatMode(value: RepeatMode) {
-        player.playerOptions.repeatMode = value
+        player.repeatMode = value
     }
 
     @MainThread
@@ -589,12 +433,11 @@ class MusicService : HeadlessJsMediaService() {
 
     @MainThread
     fun updateNowPlayingMetadata(track: Track) {
-        player.notificationManager.overrideMetadata(track.toAudioItem())
+        updateMetadataForTrack(player.currentIndex, track)
     }
 
     @MainThread
     fun clearNotificationMetadata() {
-        player.notificationManager.hideNotification()
     }
 
     private fun emitPlaybackTrackChangedEvents(
@@ -721,46 +564,6 @@ class MusicService : HeadlessJsMediaService() {
 
         fun shouldStopForeground(): Boolean {
             return stopForegroundWhenNotOngoing && (removeNotificationWhenNotOngoing || isForegroundService())
-        }
-
-        scope.launch {
-            event.notificationStateChange.collect {
-                when (it) {
-                    is NotificationState.POSTED -> {
-                        Timber.d("notification posted with id=%s, ongoing=%s", it.notificationId, it.ongoing)
-                        notificationId = it.notificationId;
-                        notification = it.notification;
-                        if (it.ongoing) {
-                            if (player.playWhenReady) {
-                                if (sWakeLock?.isHeld != true) {
-                                    Timber.tag("RNTP").d("acquiring wakelock")
-                                    sWakeLock?.acquire()
-                                }
-                                startForegroundIfNecessary()
-                            }
-                        } else if (shouldStopForeground()) {
-                            // Allow the application a grace period to complete any actions
-                            // that may necessitate keeping the service in a foreground state.
-                            // For instance, queuing new media (e.g., related music) after the
-                            // user's queue is complete. This prevents the service from potentially
-                            // being immediately destroyed once the player finishes playing media.
-                            scope.launch {
-                                if (sWakeLock?.isHeld == true) {
-                                    Timber.tag("RNTP").d("releasing wakelock")
-                                    sWakeLock?.release()
-                                }
-                                delay(stopForegroundGracePeriod.toLong() * 1000)
-                                if (shouldStopForeground()) {
-                                    @Suppress("DEPRECATION")
-                                    stopForeground(removeNotificationWhenNotOngoing)
-                                    Timber.d("Notification has been stopped")
-                                }
-                            }
-                        }
-                    }
-                    else -> {}
-                }
-            }
         }
     }
 
@@ -965,6 +768,9 @@ class MusicService : HeadlessJsMediaService() {
             else -> {}
         }
     }
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
+        mediaSession
 
     @MainThread
     override fun onHeadlessJsTaskFinish(taskId: Int) {
