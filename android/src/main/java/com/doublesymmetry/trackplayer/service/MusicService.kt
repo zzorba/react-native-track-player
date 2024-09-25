@@ -10,7 +10,10 @@ import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import androidx.annotation.MainThread
+import androidx.annotation.OptIn
 import androidx.media.utils.MediaConstants
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.MediaSession
 import com.lovegaoshi.kotlinaudio.models.*
 import com.lovegaoshi.kotlinaudio.player.QueuedAudioPlayer
@@ -27,6 +30,7 @@ import com.doublesymmetry.trackplayer.module.MusicEvents
 import com.doublesymmetry.trackplayer.module.MusicEvents.Companion.METADATA_PAYLOAD_KEY
 import com.doublesymmetry.trackplayer.utils.BundleUtils
 import com.doublesymmetry.trackplayer.utils.BundleUtils.setRating
+import com.doublesymmetry.trackplayer.utils.CoilBitmapLoader
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
 import com.facebook.react.modules.core.DeviceEventManagerModule
@@ -36,6 +40,7 @@ import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
+@OptIn(UnstableApi::class)
 @MainThread
 class MusicService : HeadlessJsMediaService() {
     private lateinit var player: QueuedAudioPlayer
@@ -117,13 +122,16 @@ class MusicService : HeadlessJsMediaService() {
                 playerOptions?.getDouble(MIN_BUFFER_KEY)?.toMilliseconds()?.toInt(),
                 playerOptions?.getDouble(MAX_BUFFER_KEY)?.toMilliseconds()?.toInt(),
                 playerOptions?.getDouble(PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-                playerOptions?.getDouble(BACK_BUFFER_KEY)?.toMilliseconds()?.toInt(),)
+                playerOptions?.getDouble(BACK_BUFFER_KEY)?.toMilliseconds()?.toInt(),
+            )
 
         )
 
         player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
         mediaSession = MediaLibrarySession
             .Builder(this, player.player, APMMediaSessionCallback(arrayListOf()))
+            .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
+            .setId("APM-MediaSession")
             // .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
             .build()
         observeEvents()

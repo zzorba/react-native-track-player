@@ -266,6 +266,9 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         val sessionToken =
             SessionToken(context, ComponentName(context, MusicService::class.java))
         val browserFuture = MediaBrowser.Builder(context, sessionToken).buildAsync()
+        scope.launch {
+            // browser = browserFuture.get()
+        }
 
     }
 
