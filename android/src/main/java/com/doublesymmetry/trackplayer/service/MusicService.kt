@@ -1,21 +1,15 @@
 package com.doublesymmetry.trackplayer.service
 
-import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.provider.Settings
 import android.support.v4.media.MediaBrowserCompat.MediaItem
-import android.support.v4.media.RatingCompat
 import androidx.annotation.MainThread
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationCompat.PRIORITY_LOW
 import androidx.media.utils.MediaConstants
 import androidx.media3.session.MediaSession
 import com.lovegaoshi.kotlinaudio.models.*
@@ -41,15 +35,13 @@ import kotlinx.coroutines.flow.flow
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
-import com.doublesymmetry.trackplayer.R as TrackPlayerR
-import androidx.media3.ui.R as ExoPlayerR
 
 @MainThread
 class MusicService : HeadlessJsMediaService() {
     private lateinit var player: QueuedAudioPlayer
     private val binder = MusicBinder()
     private val scope = MainScope()
-    lateinit var mediaSession: MediaLibrarySession
+    private lateinit var mediaSession: MediaLibrarySession
     private var progressUpdateJob: Job? = null
     var mediaTree: Map<String, List<MediaItem>> = HashMap()
     var mediaTreeStyle: List<Int> = listOf(
@@ -99,50 +91,7 @@ class MusicService : HeadlessJsMediaService() {
         }
 
     private var latestOptions: Bundle? = null
-    private var capabilities: List<Capability> = emptyList()
-    private var notificationCapabilities: List<Capability> = emptyList()
     private var compactCapabilities: List<Capability> = emptyList()
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-        startTask(getTaskConfig(intent))
-        if (intent != null) startAndStopEmptyNotificationToAvoidANR()
-        return START_STICKY
-    }
-
-    /**
-     * Workaround for the "Context.startForegroundService() did not then call Service.startForeground()"
-     * within 5s" ANR and crash by creating an empty notification and stopping it right after. For more
-     * information see https://github.com/doublesymmetry/react-native-track-player/issues/1666
-     */
-    private fun startAndStopEmptyNotificationToAvoidANR() {
-        val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationManager.createNotificationChannel(
-                NotificationChannel(getString(TrackPlayerR.string.rntp_temporary_channel_id), getString(TrackPlayerR.string.rntp_temporary_channel_name), NotificationManager.IMPORTANCE_LOW)
-            )
-        }
-
-        val notificationBuilder = NotificationCompat.Builder(this, getString(TrackPlayerR.string.rntp_temporary_channel_id))
-            .setPriority(PRIORITY_LOW)
-            .setCategory(Notification.CATEGORY_SERVICE)
-            .setSmallIcon(ExoPlayerR.drawable.exo_notification_small_icon)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            notificationBuilder.foregroundServiceBehavior = NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
-        }
-        val notification = notificationBuilder.build()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(EMPTY_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-        } else {
-            startForeground(EMPTY_NOTIFICATION_ID, notification)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } else {
-            @Suppress("DEPRECATION")
-            stopForeground(true)
-        }
-    }
 
     @MainThread
     fun setupPlayer(playerOptions: Bundle?) {
@@ -151,6 +100,7 @@ class MusicService : HeadlessJsMediaService() {
             return
         }
 
+        Timber.tag("GVA-RNTP").d("RNTP musicservice set up.")
         val mPlayerOptions = PlayerOptions(
             cacheSize = playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong() ?: 0,
             audioContentType = when(playerOptions?.getString(ANDROID_AUDIO_CONTENT_TYPE)) {
@@ -177,7 +127,6 @@ class MusicService : HeadlessJsMediaService() {
             // .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
             .build()
         observeEvents()
-        setupForegrounding()
     }
 
     @MainThread
@@ -490,84 +439,6 @@ class MusicService : HeadlessJsMediaService() {
     }
 
     @MainThread
-    private fun setupForegrounding() {
-        // Implementation based on https://github.com/Automattic/pocket-casts-android/blob/ee8da0c095560ef64a82d3a31464491b8d713104/modules/services/repositories/src/main/java/au/com/shiftyjelly/pocketcasts/repositories/playback/PlaybackService.kt#L218
-        var notificationId: Int? = null
-        var notification: Notification? = null
-        var stopForegroundWhenNotOngoing = false
-        var removeNotificationWhenNotOngoing = false
-
-        fun startForegroundIfNecessary() {
-            if (isForegroundService()) {
-                Timber.d("skipping foregrounding as the service is already foregrounded")
-                return
-            }
-            if (notification == null) {
-                Timber.d("can't startForeground as the notification is null")
-                return
-            }
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    startForeground(
-                        notificationId!!,
-                        notification!!,
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                    )
-                } else {
-                    startForeground(notificationId!!, notification)
-                }
-                Timber.d("notification has been foregrounded")
-            } catch (error: Exception) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                    error is ForegroundServiceStartNotAllowedException
-                ) {
-                    Timber.e(
-                        "ForegroundServiceStartNotAllowedException: App tried to start a foreground Service when it was not allowed to do so.",
-                        error
-                    )
-                    emit(MusicEvents.PLAYER_ERROR, Bundle().apply {
-                        putString("message", error.message)
-                        putString("code", "android-foreground-service-start-not-allowed")
-                    });
-                }
-            }
-        }
-
-        scope.launch {
-            val BACKGROUNDABLE_STATES = listOf(
-                AudioPlayerState.IDLE,
-                AudioPlayerState.ENDED,
-                AudioPlayerState.STOPPED,
-                AudioPlayerState.ERROR,
-                AudioPlayerState.PAUSED
-            )
-            val REMOVABLE_STATES = listOf(
-                AudioPlayerState.IDLE,
-                AudioPlayerState.STOPPED,
-                AudioPlayerState.ERROR
-            )
-            val LOADING_STATES = listOf(
-                AudioPlayerState.LOADING,
-                AudioPlayerState.READY,
-                AudioPlayerState.BUFFERING
-            )
-            var stateCount = 0
-            event.stateChange.collect {
-                stateCount++
-                if (it in LOADING_STATES) return@collect;
-                // Skip initial idle state, since we are only interested when
-                // state becomes idle after not being idle
-                stopForegroundWhenNotOngoing = stateCount > 1 && it in BACKGROUNDABLE_STATES
-                removeNotificationWhenNotOngoing = stopForegroundWhenNotOngoing && it in REMOVABLE_STATES
-            }
-        }
-
-        fun shouldStopForeground(): Boolean {
-            return stopForegroundWhenNotOngoing && (removeNotificationWhenNotOngoing || isForegroundService())
-        }
-    }
-
-    @MainThread
     private fun observeEvents() {
         scope.launch {
             event.stateChange.collect {
@@ -769,7 +640,7 @@ class MusicService : HeadlessJsMediaService() {
         }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession =
         mediaSession
 
     @MainThread

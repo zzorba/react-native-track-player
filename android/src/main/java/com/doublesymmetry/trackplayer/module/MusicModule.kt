@@ -20,6 +20,8 @@ import com.doublesymmetry.trackplayer.utils.AppForegroundTracker
 import com.doublesymmetry.trackplayer.utils.RejectionException
 import com.facebook.react.bridge.*
 import androidx.media3.common.Player
+import androidx.media3.session.MediaBrowser
+import androidx.media3.session.SessionToken
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -33,6 +35,7 @@ import javax.annotation.Nonnull
  */
 class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext),
     ServiceConnection {
+    private lateinit var browser: MediaBrowser
     private var playerOptions: Bundle? = null
     private var isServiceBound = false
     private var playerSetUpPromise: Promise? = null
@@ -258,30 +261,12 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                 IntentFilter(EVENT_INTENT)
             )
         }
-        val musicModule = this
-        scope.launch {
-            var retries = 0
-            while (true) {
-                try {
-                    Intent(context, MusicService::class.java).also { intent ->
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            context.startForegroundService(intent)
-                        } else {
-                            context.startService(intent)
-                        }
-                        context.bindService(intent, musicModule, Context.BIND_AUTO_CREATE)
-                    }
-                    break
-                } catch (exception: Exception) {
-                    retries += 1
-                    Timber.tag("RNTP").w("Could not initialize service due to %s, await 500 ms...", exception)
-                    if (retries > 10) {
-                        throw exception
-                    }
-                    delay(500)
-                }
-            }
-        }
+        val intent = Intent(context, MusicService::class.java)
+        context.bindService(intent, this, Context.BIND_AUTO_CREATE)
+        val sessionToken =
+            SessionToken(context, ComponentName(context, MusicService::class.java))
+        val browserFuture = MediaBrowser.Builder(context, sessionToken).buildAsync()
+
     }
 
     @ReactMethod
