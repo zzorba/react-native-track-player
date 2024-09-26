@@ -448,6 +448,8 @@ class MusicService : HeadlessJsMediaService() {
 
     @MainThread
     private fun observeEvents() {
+        Timber.tag("APM").d("observing events.")
+
         scope.launch {
             event.stateChange.collect {
                 emit(MusicEvents.PLAYBACK_STATE, getPlayerStateBundle(it))
@@ -594,9 +596,10 @@ class MusicService : HeadlessJsMediaService() {
 
     @MainThread
     private fun emit(event: String, data: Bundle? = null) {
+
+        Timber.tag("APM").d("triggered remote events: $event")
         reactNativeHost.reactInstanceManager.currentReactContext
-            ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            ?.emit(event, data?.let { Arguments.fromBundle(it) })
+            ?.emitDeviceEvent(event, data?.let { Arguments.fromBundle(it) })
     }
 
     @MainThread
@@ -605,8 +608,7 @@ class MusicService : HeadlessJsMediaService() {
         data.forEach { payload.pushMap(Arguments.fromBundle(it)) }
 
         reactNativeHost.reactInstanceManager.currentReactContext
-            ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            ?.emit(event, payload)
+            ?.emitDeviceEvent(event, payload)
     }
 
     override fun getTaskConfig(intent: Intent?): HeadlessJsTaskConfig {

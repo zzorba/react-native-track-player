@@ -59,7 +59,6 @@ class MediaFactory (
         val resourceId = mediaItem.mediaMetadata.extras?.getInt("resource-id")
         val resourceType = mediaItem.mediaMetadata.extras?.getString("type")
         val uri = Uri.parse(mediaItem.mediaMetadata.extras?.getString("uri")!!)
-        Log.d("APM", "$resourceType: $resourceId")
         val factory: DataSource.Factory = when {
             resourceId != 0 && resourceId != null -> {
                 val raw = RawResourceDataSource(context)
