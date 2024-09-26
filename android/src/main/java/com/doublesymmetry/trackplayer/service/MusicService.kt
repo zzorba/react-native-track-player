@@ -97,6 +97,17 @@ class MusicService : HeadlessJsMediaService() {
 
     private var latestOptions: Bundle? = null
     private var compactCapabilities: List<Capability> = emptyList()
+    private var commandStarted = false
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // HACK: Why is onPlay triggering onStartCommand??
+        Timber.tag("APM").d("startCommand${intent.toString()}; ${flags}, $startId")
+        if (!commandStarted) {
+            commandStarted = true
+            super.onStartCommand(intent, flags, startId)
+        }
+        return START_STICKY
+    }
 
     @MainThread
     fun setupPlayer(playerOptions: Bundle?) {

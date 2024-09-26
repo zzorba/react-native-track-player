@@ -261,15 +261,25 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                 IntentFilter(EVENT_INTENT)
             )
         }
-        val intent = Intent(context, MusicService::class.java)
-        context.bindService(intent, this, Context.BIND_AUTO_CREATE)
-        val sessionToken =
-            SessionToken(context, ComponentName(context, MusicService::class.java))
-        val browserFuture = MediaBrowser.Builder(context, sessionToken).buildAsync()
-        scope.launch {
-            // browser = browserFuture.get()
-        }
 
+        val musicModule = this
+        try {
+            Intent(context, MusicService::class.java).also { intent ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+                context.bindService(intent, musicModule, Context.BIND_AUTO_CREATE)
+                val sessionToken =
+                    SessionToken(context, ComponentName(context, MusicService::class.java))
+                val browserFuture = MediaBrowser.Builder(context, sessionToken).buildAsync()
+                // browser = browserFuture.get()
+            }
+        } catch (exception: Exception) {
+            Timber.tag("RNTP").w(exception, "Could not initialize service")
+            throw exception
+        }
     }
 
     @ReactMethod
