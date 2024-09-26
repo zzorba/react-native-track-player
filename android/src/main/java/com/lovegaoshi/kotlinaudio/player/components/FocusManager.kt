@@ -20,7 +20,6 @@ class FocusManager (
 
     fun requestAudioFocus() {
         if (hasAudioFocus) return
-        Log.d("APM", "Requesting audio focus...")
 
         val manager = ContextCompat.getSystemService(context, AudioManager::class.java)
 

@@ -70,7 +70,7 @@ class MusicService : HeadlessJsMediaService() {
         CONTINUE_PLAYBACK("continue-playback"), PAUSE_PLAYBACK("pause-playback"), STOP_PLAYBACK_AND_REMOVE_NOTIFICATION("stop-playback-and-remove-notification")
     }
 
-    private var appKilledPlaybackBehavior = AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
+    private var appKilledPlaybackBehavior = AppKilledPlaybackBehavior.STOP_PLAYBACK_AND_REMOVE_NOTIFICATION
     private var stopForegroundGracePeriod: Int = DEFAULT_STOP_FOREGROUND_GRACE_PERIOD
 
     val tracks: List<Track>
@@ -459,8 +459,6 @@ class MusicService : HeadlessJsMediaService() {
 
     @MainThread
     private fun observeEvents() {
-        Timber.tag("APM").d("observing events.")
-
         scope.launch {
             event.stateChange.collect {
                 emit(MusicEvents.PLAYBACK_STATE, getPlayerStateBundle(it))
@@ -607,8 +605,6 @@ class MusicService : HeadlessJsMediaService() {
 
     @MainThread
     private fun emit(event: String, data: Bundle? = null) {
-
-        Timber.tag("APM").d("triggered remote events: $event")
         reactNativeHost.reactInstanceManager.currentReactContext
             ?.emitDeviceEvent(event, data?.let { Arguments.fromBundle(it) })
     }
@@ -638,6 +634,7 @@ class MusicService : HeadlessJsMediaService() {
 
     @MainThread
     override fun onTaskRemoved(rootIntent: Intent?) {
+        onUnbind(rootIntent)
         super.onTaskRemoved(rootIntent)
         if (!::player.isInitialized) return
 
@@ -646,7 +643,6 @@ class MusicService : HeadlessJsMediaService() {
             AppKilledPlaybackBehavior.STOP_PLAYBACK_AND_REMOVE_NOTIFICATION -> {
                 player.clear()
                 player.stop()
-
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     stopForeground(STOP_FOREGROUND_REMOVE)
                 } else {
@@ -654,6 +650,7 @@ class MusicService : HeadlessJsMediaService() {
                     stopForeground(true)
                 }
 
+                onUnbind(rootIntent)
                 stopSelf()
                 exitProcess(0)
             }
@@ -673,6 +670,7 @@ class MusicService : HeadlessJsMediaService() {
     override fun onDestroy() {
         super.onDestroy()
         if (::player.isInitialized) {
+            mediaSession.release()
             player.destroy()
         }
 
