@@ -15,9 +15,7 @@ class MusicEvents(private val reactContext: ReactContext) : BroadcastReceiver() 
         val event = intent.getStringExtra("event")
         val data = intent.getBundleExtra("data")
         val map = if (data != null) Arguments.fromBundle(data) else null
-        reactContext.getJSModule(RCTDeviceEventEmitter::class.java).emit(
-            event!!, map
-        )
+        reactContext.emitDeviceEvent(event!!, map)
     }
 
     companion object {
