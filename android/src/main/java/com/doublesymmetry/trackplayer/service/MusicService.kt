@@ -3,6 +3,7 @@ package com.doublesymmetry.trackplayer.service
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +11,7 @@ import android.os.IBinder
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import androidx.annotation.MainThread
 import androidx.annotation.OptIn
+import androidx.core.app.NotificationCompat
 import androidx.media.utils.MediaConstants
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -106,13 +108,49 @@ class MusicService : HeadlessJsMediaService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // HACK: Why is onPlay triggering onStartCommand??
-        Timber.tag("APM").d("startCommand${intent.toString()}; ${flags}, $startId")
         if (!commandStarted) {
             commandStarted = true
             super.onStartCommand(intent, flags, startId)
+            startAndStopEmptyNotificationToAvoidANR()
         }
         return START_STICKY
     }
+
+    /**
+     * Workaround for the "Context.startForegroundService() did not then call Service.startForeground()"
+     * within 5s" ANR and crash by creating an empty notification and stopping it right after. For more
+     * information see https://github.com/doublesymmetry/react-native-track-player/issues/1666
+     */
+    private fun startAndStopEmptyNotificationToAvoidANR() {
+        val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.createNotificationChannel(NotificationChannel(
+                getString(TrackPlayerR.string.rntp_temporary_channel_id),
+                getString(TrackPlayerR.string.rntp_temporary_channel_name),
+                NotificationManager.IMPORTANCE_LOW)
+            )
+        }
+
+        val notificationBuilder = NotificationCompat.Builder(this, getString(TrackPlayerR.string.rntp_temporary_channel_id))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(Notification.CATEGORY_SERVICE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            notificationBuilder.foregroundServiceBehavior = NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
+        }
+        val notification = notificationBuilder.build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(EMPTY_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            startForeground(EMPTY_NOTIFICATION_ID, notification)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
+    }
+
 
     @MainThread
     fun setupPlayer(playerOptions: Bundle?) {
