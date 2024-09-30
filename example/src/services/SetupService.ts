@@ -49,7 +49,11 @@ export const SetupService = async () => {
       Capability.Pause,
       // Capability.SkipToNext,
     ],
-    notificationCapabilities: [Capability.Play, Capability.Pause],
+    notificationCapabilities: [
+      Capability.Play,
+      Capability.Pause,
+      Capability.SeekTo,
+    ],
     progressUpdateEventInterval: 2,
     customActions: {
       customActionsList: [

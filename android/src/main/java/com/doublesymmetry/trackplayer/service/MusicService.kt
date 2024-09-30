@@ -11,9 +11,12 @@ import android.support.v4.media.MediaBrowserCompat.MediaItem
 import androidx.annotation.MainThread
 import androidx.annotation.OptIn
 import androidx.media.utils.MediaConstants
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionCommands
 import com.lovegaoshi.kotlinaudio.models.*
 import com.lovegaoshi.kotlinaudio.player.QueuedAudioPlayer
 import com.doublesymmetry.trackplayer.HeadlessJsMediaService
@@ -27,11 +30,13 @@ import com.doublesymmetry.trackplayer.model.Track
 import com.doublesymmetry.trackplayer.model.TrackAudioItem
 import com.doublesymmetry.trackplayer.module.MusicEvents
 import com.doublesymmetry.trackplayer.module.MusicEvents.Companion.METADATA_PAYLOAD_KEY
+import com.doublesymmetry.trackplayer.R as TrackPlayerR
 import com.doublesymmetry.trackplayer.utils.BundleUtils
 import com.doublesymmetry.trackplayer.utils.BundleUtils.setRating
 import com.doublesymmetry.trackplayer.utils.CoilBitmapLoader
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
+import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flow
 import timber.log.Timber
@@ -140,7 +145,7 @@ class MusicService : HeadlessJsMediaService() {
 
         player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
         mediaSession = MediaLibrarySession
-            .Builder(this, player.player, APMMediaSessionCallback(arrayListOf()))
+            .Builder(this, player.player, APMMediaSessionCallback(arrayListOf(), ::emit))
             .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
             .setId("APM-MediaSession")
             // .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
@@ -177,6 +182,81 @@ class MusicService : HeadlessJsMediaService() {
                 progressUpdateEventFlow(updateInterval).collect { emit(MusicEvents.PLAYBACK_PROGRESS_UPDATED, it) }
             }
         }
+
+        val capabilities = options.getIntegerArrayList("capabilities")?.map { Capability.entries[it] } ?: emptyList()
+        var notificationCapabilities = options.getIntegerArrayList("notificationCapabilities")?.map { Capability.entries[it] } ?: emptyList()
+        compactCapabilities = options.getIntegerArrayList("compactCapabilities")?.map { Capability.entries[it] } ?: emptyList()
+        val customActions = options.getBundle(CUSTOM_ACTIONS_KEY)
+        val customActionsList = customActions?.getStringArrayList(CUSTOM_ACTIONS_LIST_KEY)
+        if (notificationCapabilities.isEmpty()) notificationCapabilities = capabilities
+
+        val playerCommandsBuilder = Player.Commands.Builder().addAll(
+            // HACK: without COMMAND_GET_CURRENT_MEDIA_ITEM, notification cannot be created
+            Player.COMMAND_GET_CURRENT_MEDIA_ITEM,
+            Player.COMMAND_GET_TRACKS,
+            Player.COMMAND_GET_TIMELINE,
+            Player.COMMAND_GET_METADATA,
+            Player.COMMAND_GET_AUDIO_ATTRIBUTES,
+            Player.COMMAND_GET_VOLUME,
+            Player.COMMAND_GET_DEVICE_VOLUME,
+            Player.COMMAND_GET_TEXT,
+        )
+        notificationCapabilities.forEach {
+            when (it) {
+                Capability.PLAY, Capability.PAUSE -> {
+                    playerCommandsBuilder.add(Player.COMMAND_PLAY_PAUSE)
+                }
+                Capability.STOP -> {
+                    playerCommandsBuilder.add(Player.COMMAND_STOP)
+                }
+                Capability.SKIP_TO_NEXT -> {
+                    playerCommandsBuilder.add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                }
+                Capability.SKIP_TO_PREVIOUS -> {
+                    playerCommandsBuilder.add(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                }
+                Capability.JUMP_FORWARD -> {
+                    playerCommandsBuilder.add(Player.COMMAND_SEEK_FORWARD)
+                }
+                Capability.JUMP_BACKWARD -> {
+                    playerCommandsBuilder.add(Player.COMMAND_SEEK_BACK)
+                }
+                Capability.SEEK_TO -> {
+                    playerCommandsBuilder.add(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
+                }
+                else -> { }
+            }
+        }
+        val customLayout = customActionsList?.map {
+                v -> CustomButton(
+            displayName = v,
+            sessionCommand = v,
+            iconRes = BundleUtils.getCustomIcon(
+                this,
+                customActions,
+                v,
+                TrackPlayerR.drawable.media3_icon_check_circle_unfilled
+            )
+        ).commandButton
+        } ?: ImmutableList.of()
+
+        val sessionCommandsBuilder = SessionCommands.Builder()
+        customLayout.forEach {
+            v ->
+            v.sessionCommand?.let { sessionCommandsBuilder.add(it) }
+        }
+
+        val sessionCommands = sessionCommandsBuilder.build()
+        val playerCommands = playerCommandsBuilder.build()
+
+        mediaSession.connectedControllers.forEach { controller ->
+            mediaSession.setCustomLayout(controller, customLayout)
+            mediaSession.setAvailableCommands(
+                controller,
+                sessionCommands,
+                playerCommands
+            )
+        }
     }
 
     @MainThread
@@ -201,18 +281,6 @@ class MusicService : HeadlessJsMediaService() {
                 putInt(TRACK_KEY, player.currentIndex)
             }
         }
-    }
-
-    private fun getPendingIntentFlags(): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT
-        } else {
-            PendingIntent.FLAG_CANCEL_CURRENT
-        }
-    }
-
-    private fun isCompact(capability: Capability): Boolean {
-        return compactCapabilities.contains(capability)
     }
 
     @MainThread
