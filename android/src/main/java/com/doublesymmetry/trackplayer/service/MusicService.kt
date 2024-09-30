@@ -111,6 +111,10 @@ class MusicService : HeadlessJsMediaService() {
         if (!commandStarted) {
             commandStarted = true
             super.onStartCommand(intent, flags, startId)
+            // HACK: this is due to MusicModule starts the service but not immediately starting the playback;
+            // thus the exception is thrown. the workaround is to not "start service" in MusicModule.
+            // however I found initiating playback via notification wont start this way
+            // ie. onStartCommand will not start. need to investigate further on why
             startAndStopEmptyNotificationToAvoidANR()
         }
         return START_STICKY
