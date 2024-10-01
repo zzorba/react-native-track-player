@@ -7,8 +7,8 @@ import android.os.Bundle
 import android.os.IBinder
 import android.net.Uri
 import android.support.v4.media.RatingCompat
-import android.support.v4.media.MediaBrowserCompat.MediaItem
-import android.support.v4.media.MediaDescriptionCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media.utils.MediaConstants
 import com.lovegaoshi.kotlinaudio.models.Capability
 import com.lovegaoshi.kotlinaudio.models.RepeatMode
@@ -22,6 +22,7 @@ import com.facebook.react.bridge.*
 import androidx.media3.common.Player
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionToken
+import com.doublesymmetry.trackplayer.utils.buildMediaItem
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -96,19 +97,9 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     private fun hashmapToMediaItem(hashmap: HashMap<String, String>): MediaItem {
-        val mediaId = hashmap["mediaId"]
-        val title = hashmap["title"]
-        val subtitle = hashmap["subtitle"]
         val mediaUri = hashmap["mediaUri"]
         val iconUri = hashmap["iconUri"]
-        val playableFlag = if (hashmap["playable"]?.toInt() == 1) MediaItem.FLAG_BROWSABLE else MediaItem.FLAG_PLAYABLE
 
-        val mediaDescriptionBuilder = MediaDescriptionCompat.Builder()
-        mediaDescriptionBuilder.setMediaId(mediaId)
-        mediaDescriptionBuilder.setTitle(title)
-        mediaDescriptionBuilder.setSubtitle(subtitle)
-        mediaDescriptionBuilder.setMediaUri(if (mediaUri != null) Uri.parse(mediaUri) else null)
-        mediaDescriptionBuilder.setIconUri(if (iconUri != null) Uri.parse(iconUri) else null)
         val extras = Bundle()
         hashmap["groupTitle"]?.let {
             extras.putString(
@@ -145,9 +136,15 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                     MediaConstants.DESCRIPTION_EXTRAS_KEY_COMPLETION_PERCENTAGE, it)
             }
         }
-
-        mediaDescriptionBuilder.setExtras(extras)
-        return MediaItem(mediaDescriptionBuilder.build(), playableFlag)
+        return buildMediaItem(
+            isPlayable = hashmap["playable"]?.toInt() == 1,
+            title = hashmap["title"],
+            mediaId = hashmap["mediaId"] ?: "no-media-id",
+            imageUri = if (iconUri != null) Uri.parse(iconUri) else null,
+            artist = hashmap["subtitle"],
+            subtitle = hashmap["subtitle"],
+            sourceUri = if (mediaUri != null) Uri.parse(mediaUri) else null
+        )
     }
 
     private fun readableArrayToMediaItems(data: ArrayList<HashMap<String, String>>): MutableList<MediaItem> {

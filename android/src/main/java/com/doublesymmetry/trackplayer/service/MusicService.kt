@@ -4,11 +4,11 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.support.v4.media.MediaBrowserCompat.MediaItem
 import androidx.annotation.MainThread
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
@@ -16,9 +16,13 @@ import androidx.media.utils.MediaConstants
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CacheBitmapLoader
+import androidx.media3.session.LibraryResult
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionCommands
+import androidx.media3.session.SessionResult
 import com.lovegaoshi.kotlinaudio.models.*
 import com.lovegaoshi.kotlinaudio.player.QueuedAudioPlayer
 import com.doublesymmetry.trackplayer.HeadlessJsMediaService
@@ -36,9 +40,12 @@ import com.doublesymmetry.trackplayer.R as TrackPlayerR
 import com.doublesymmetry.trackplayer.utils.BundleUtils
 import com.doublesymmetry.trackplayer.utils.BundleUtils.setRating
 import com.doublesymmetry.trackplayer.utils.CoilBitmapLoader
+import com.doublesymmetry.trackplayer.utils.buildMediaItem
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
 import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flow
 import timber.log.Timber
@@ -57,6 +64,9 @@ class MusicService : HeadlessJsMediaService() {
     var mediaTreeStyle: List<Int> = listOf(
         MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
         MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
+    private var sessionCommands: SessionCommands? = null
+    private var playerCommands: Player.Commands? = null
+
 
     @ExperimentalCoroutinesApi
     override fun onCreate() {
@@ -187,7 +197,7 @@ class MusicService : HeadlessJsMediaService() {
 
         player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
         mediaSession = MediaLibrarySession
-            .Builder(this, player.player, APMMediaSessionCallback(arrayListOf(), ::emit))
+            .Builder(this, player.player, APMMediaSessionCallback())
             .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
             .setId("APM-MediaSession")
             // .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
@@ -288,15 +298,15 @@ class MusicService : HeadlessJsMediaService() {
             v.sessionCommand?.let { sessionCommandsBuilder.add(it) }
         }
 
-        val sessionCommands = sessionCommandsBuilder.build()
-        val playerCommands = playerCommandsBuilder.build()
+        sessionCommands = sessionCommandsBuilder.build()
+        playerCommands = playerCommandsBuilder.build()
 
         mediaSession.connectedControllers.forEach { controller ->
             mediaSession.setCustomLayout(controller, customLayout)
             mediaSession.setAvailableCommands(
                 controller,
-                sessionCommands,
-                playerCommands
+                sessionCommands!!,
+                playerCommands!!
             )
         }
     }
@@ -795,6 +805,44 @@ class MusicService : HeadlessJsMediaService() {
     @MainThread
     inner class MusicBinder : Binder() {
         val service = this@MusicService
+    }
+
+    private inner class APMMediaSessionCallback: MediaLibrarySession.Callback {
+
+        val rootItem = buildMediaItem(title = "ROOT Folder", mediaId = "ROOT-ID", isPlayable = false)
+
+        // Configure commands available to the controller in onConnect()
+        @OptIn(UnstableApi::class)
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(sessionCommands ?: MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS)
+                .setAvailablePlayerCommands(playerCommands ?: MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle
+        ): ListenableFuture<SessionResult> {
+            Bundle().apply {
+                putString("customAction", customCommand.customAction)
+                emit(MusicEvents.BUTTON_CUSTOM_ACTION, this)
+            }
+            return super.onCustomCommand(session, controller, customCommand, args)
+        }
+
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, null))
+        }
     }
 
     companion object {
