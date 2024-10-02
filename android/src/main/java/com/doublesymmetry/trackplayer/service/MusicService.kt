@@ -4,7 +4,6 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
@@ -18,7 +17,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.LibraryResult
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionCommands
@@ -66,7 +64,6 @@ class MusicService : HeadlessJsMediaService() {
         MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
     private var sessionCommands: SessionCommands? = null
     private var playerCommands: Player.Commands? = null
-
 
     @ExperimentalCoroutinesApi
     override fun onCreate() {
@@ -817,6 +814,8 @@ class MusicService : HeadlessJsMediaService() {
             session: MediaSession,
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
+            Timber.tag("APM").d("connection via: ${controller.packageName}")
+            return super.onConnect(session, controller)
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                 .setAvailableSessionCommands(sessionCommands ?: MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS)
                 .setAvailablePlayerCommands(playerCommands ?: MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
@@ -829,10 +828,7 @@ class MusicService : HeadlessJsMediaService() {
             customCommand: SessionCommand,
             args: Bundle
         ): ListenableFuture<SessionResult> {
-            Bundle().apply {
-                putString("customAction", customCommand.customAction)
-                emit(MusicEvents.BUTTON_CUSTOM_ACTION, this)
-            }
+            emit(MusicEvents.BUTTON_CUSTOM_ACTION, Bundle().apply { putString("customAction", customCommand.customAction) })
             return super.onCustomCommand(session, controller, customCommand, args)
         }
 
@@ -841,7 +837,28 @@ class MusicService : HeadlessJsMediaService() {
             browser: MediaSession.ControllerInfo,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<MediaItem>> {
+            Timber.tag("APM").d("acquiring root: ${browser.packageName}")
             return Futures.immediateFuture(LibraryResult.ofItem(rootItem, null))
+        }
+
+        override fun onGetChildren(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            return Futures.immediateFuture(LibraryResult.ofItemList(listOf(MediaItem.EMPTY), null))
+        }
+
+        override fun onGetItem(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            mediaId: String
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            emit(MusicEvents.BUTTON_PLAY_FROM_ID, Bundle().apply { putString("mediaId", mediaId) })
+            return Futures.immediateFuture(LibraryResult.ofItem(MediaItem.EMPTY, null))
         }
     }
 

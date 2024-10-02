@@ -44,6 +44,7 @@
   * {@link BroadcastReceiver#onReceive}, to make sure the device doesn't go to sleep before the
   * service is started.
   */
+
  public abstract class HeadlessJsMediaService extends MediaLibraryService implements HeadlessJsTaskEventListener {
  
    private final Set<Integer> mActiveTasks = new CopyOnWriteArraySet<>();
