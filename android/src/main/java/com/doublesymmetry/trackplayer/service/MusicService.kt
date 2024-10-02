@@ -783,6 +783,12 @@ class MusicService : HeadlessJsMediaService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession =
         mediaSession
 
+    fun notifyChildrenChanged() {
+        mediaTree.forEach {
+            it -> mediaSession.notifyChildrenChanged(it.key, it.value.size, null)
+        }
+    }
+
     @MainThread
     override fun onHeadlessJsTaskFinish(taskId: Int) {
         // This is empty so ReactNative doesn't kill this service
@@ -807,6 +813,7 @@ class MusicService : HeadlessJsMediaService() {
     private inner class APMMediaSessionCallback: MediaLibrarySession.Callback {
 
         val rootItem = buildMediaItem(title = "ROOT Folder", mediaId = "ROOT-ID", isPlayable = false)
+        val dummyItem = buildMediaItem(title = "dummy", mediaId = "dummy", isPlayable = false)
 
         // Configure commands available to the controller in onConnect()
         @OptIn(UnstableApi::class)
@@ -849,7 +856,7 @@ class MusicService : HeadlessJsMediaService() {
             pageSize: Int,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-            return Futures.immediateFuture(LibraryResult.ofItemList(listOf(MediaItem.EMPTY), null))
+            return Futures.immediateFuture(LibraryResult.ofItemList(listOf(dummyItem), null))
         }
 
         override fun onGetItem(
@@ -858,7 +865,7 @@ class MusicService : HeadlessJsMediaService() {
             mediaId: String
         ): ListenableFuture<LibraryResult<MediaItem>> {
             emit(MusicEvents.BUTTON_PLAY_FROM_ID, Bundle().apply { putString("mediaId", mediaId) })
-            return Futures.immediateFuture(LibraryResult.ofItem(MediaItem.EMPTY, null))
+            return Futures.immediateFuture(LibraryResult.ofItem(dummyItem, null))
         }
     }
 

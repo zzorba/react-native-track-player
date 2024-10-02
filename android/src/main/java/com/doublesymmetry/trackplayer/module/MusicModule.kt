@@ -707,6 +707,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         val mediaItemsMap = mediaItems.toHashMap()
         musicService.mediaTree = mediaItemsMap.mapValues { readableArrayToMediaItems(it.value as ArrayList<HashMap<String, String>>) }
         Timber.d("refreshing browseTree")
+        musicService.notifyChildrenChanged()
         callback.resolve(musicService.mediaTree.toString())
     }
 
