@@ -4,10 +4,12 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.Settings
 import androidx.annotation.MainThread
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
@@ -116,6 +118,7 @@ class MusicService : HeadlessJsMediaService() {
     private var commandStarted = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Timber.tag("APM").d("onStartCommand: ${intent?.action}")
         // HACK: Why is onPlay triggering onStartCommand??
         if (!commandStarted) {
             commandStarted = true
@@ -748,6 +751,7 @@ class MusicService : HeadlessJsMediaService() {
     @MainThread
     override fun onBind(intent: Intent?): IBinder? {
         val intentAction = intent?.action
+        Timber.tag("APM12").d("%s: .${this::mediaSession.isInitialized}", intentAction)
         return if (intentAction != null) {
             super.onBind(intent)
         } else {
@@ -782,12 +786,51 @@ class MusicService : HeadlessJsMediaService() {
         }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession =
-        mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        Timber.tag("APM").d("%s: .${this::mediaSession.isInitialized}", controllerInfo.packageName)
+        return if (this::mediaSession.isInitialized) {
+            mediaSession
+        } else {
+            if (controllerInfo.packageName in arrayOf<String>(
+                    "com.android.systemui",
+                    "com.example.android.mediacontroller",
+                    "com.google.android.projection.gearhead"
+                )) {
+                val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
+                if (
+                // HACK: validate reactActivity is present; if not, send wake intent
+                    (reactActivity == null || reactActivity.isDestroyed)
+                    && Settings.canDrawOverlays(this@MusicService)
+                ) {
+                    Timber.tag("APM")
+                        .d("%s is in the white list of waking activity.", controllerInfo.packageName)
+                    val activityIntent = packageManager.getLaunchIntentForPackage(packageName)
+                    activityIntent!!.data = Uri.parse("trackplayer://service-bound")
+                    activityIntent.action = Intent.ACTION_VIEW
+                    activityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    var activityOptions = ActivityOptions.makeBasic()
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        activityOptions = activityOptions.setPendingIntentBackgroundActivityStartMode(
+                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                    }
+                    startActivity(activityIntent, activityOptions.toBundle())
+                } else {
+                    Timber.tag("RNTP-AA")
+                        .d("%s cannot wake up the activity.", controllerInfo.packageName)
+                }
+            }
+
+            null
+        }
+    }
 
     fun notifyChildrenChanged() {
-        mediaTree.forEach {
-            it -> mediaSession.notifyChildrenChanged(it.key, it.value.size, null)
+        mediaSession.connectedControllers.forEach {
+            controller ->
+                mediaTree.forEach {
+                        it -> mediaSession.notifyChildrenChanged(controller, it.key, it.value.size, null)
+                }
+
         }
     }
 
