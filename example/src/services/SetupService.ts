@@ -25,11 +25,15 @@ const setupPlayer = async (
     await new Promise<void>((resolve) => setTimeout(resolve, 1));
   }
 };
-
+let arr = false;
 export const SetupService = async () => {
+  if (arr) return;
+  arr = true;
+  console.log('setup service2');
   await setupPlayer({
     autoHandleInterruptions: true,
   });
+  console.log('setup service2');
   await TrackPlayer.updateOptions({
     android: {
       appKilledPlaybackBehavior: DefaultAudioServiceBehaviour,

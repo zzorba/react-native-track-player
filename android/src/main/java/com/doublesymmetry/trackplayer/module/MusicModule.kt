@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.net.Uri
 import android.support.v4.media.RatingCompat
+import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media.utils.MediaConstants
@@ -229,15 +230,6 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             promise.reject(
                 "player_already_initialized",
                 "The player has already been initialized via setupPlayer."
-            )
-            return
-        }
-
-        // prevent crash Fatal Exception: android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && AppForegroundTracker.backgrounded) {
-            promise.reject(
-                "android_cannot_setup_player_in_background",
-                "On Android the app must be in the foreground when setting up the player."
             )
             return
         }

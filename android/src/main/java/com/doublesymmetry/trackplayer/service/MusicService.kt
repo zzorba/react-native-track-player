@@ -20,6 +20,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.LibraryResult
 import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
@@ -69,12 +70,13 @@ class MusicService : HeadlessJsMediaService() {
     private var sessionCommands: SessionCommands? = null
     private var playerCommands: Player.Commands? = null
     private var customLayout: List<CommandButton> = listOf()
+    private var lastWake: Long = 0
 
     @ExperimentalCoroutinesApi
     override fun onCreate() {
         Log.d("APM", "RNTP musicservice created.")
-
-        mediaSession = DummySession(this, this@MusicService).mediaSession
+        val fakePlayer = ExoPlayer.Builder(this).build()
+        mediaSession = MediaLibrarySession.Builder(this, fakePlayer, DummyCallback() ).build()
         super.onCreate()
     }
 
@@ -202,6 +204,7 @@ class MusicService : HeadlessJsMediaService() {
         )
 
         player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
+        mediaSession.release()
         mediaSession = MediaLibrarySession
             .Builder(this, player.player, APMMediaSessionCallback())
             .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
@@ -790,43 +793,47 @@ class MusicService : HeadlessJsMediaService() {
         }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
-        Log.d("APM", controllerInfo.packageName)
-        return if (this::player.isInitialized) {
-            mediaSession
-        } else {
-            val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
-            Log.d("APM", "${reactActivity == null}, ${reactActivity?.isDestroyed}," +
-                    "${Settings.canDrawOverlays(this)}")
-            if (controllerInfo.packageName in arrayOf<String>(
-                    "com.android.systemui",
-                    "com.example.android.mediacontroller",
-                    "com.google.android.projection.gearhead",
-                    "android.media.session.MediaController"
-                )) {
-                if (
-                // HACK: validate reactActivity is present; if not, send wake intent
-                    (reactActivity == null || reactActivity.isDestroyed)
-                    && Settings.canDrawOverlays(this)
-                ) {
-                    Log.d("APM", "${controllerInfo.packageName} is in the white list of waking activity.")
-                    val activityIntent = packageManager.getLaunchIntentForPackage(packageName)
-                    activityIntent!!.data = Uri.parse("trackplayer://service-bound")
-                    activityIntent.action = Intent.ACTION_VIEW
-                    activityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    var activityOptions = ActivityOptions.makeBasic()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        activityOptions = activityOptions.setPendingIntentBackgroundActivityStartMode(
-                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                    }
-                    startActivity(activityIntent, activityOptions.toBundle())
-                    return mediaSession
-                } else {
-                    Log.d("APM", "${controllerInfo.packageName} cannot wake up the activity.")
+    private fun selfWake(packageName: String) {
+        val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
+        Log.d("APM", "${reactNativeHost.reactInstanceManager.currentReactContext == null}," +
+                " ${reactActivity == null}, ${reactActivity?.isDestroyed}," +
+                "${Settings.canDrawOverlays(this)}")
+        if (packageName in arrayOf(
+                "com.android.systemui",
+                "com.example.android.mediacontroller",
+                "com.google.android.projection.gearhead"
+            )) {
+            if (
+            // HACK: validate reactActivity is present; if not, send wake intent
+                (reactActivity == null || reactActivity.isDestroyed)
+                && Settings.canDrawOverlays(this)
+            ) {
+                val currentTime = System.currentTimeMillis()
+                Log.d("APM", "wake from $packageName from ${currentTime - lastWake} ago")
+                if (currentTime - lastWake < 100000) {
+                    return;
                 }
+                lastWake =currentTime
+                Log.d("APM", "$packageName is in the white list of waking activity.")
+                val activityIntent = packageManager.getLaunchIntentForPackage(packageName)
+                activityIntent!!.data = Uri.parse("trackplayer://service-bound")
+                activityIntent.action = Intent.ACTION_VIEW
+                activityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                var activityOptions = ActivityOptions.makeBasic()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    activityOptions = activityOptions.setPendingIntentBackgroundActivityStartMode(
+                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                }
+                this.startActivity(activityIntent, activityOptions.toBundle())
+            } else {
+                Log.d("APM", "$packageName cannot wake up the activity.")
             }
-            null
         }
+    }
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession {
+        Log.d("APM", "onGetSession: ${controllerInfo.packageName}")
+        return mediaSession
     }
 
     fun notifyChildrenChanged() {
@@ -846,6 +853,7 @@ class MusicService : HeadlessJsMediaService() {
 
     @MainThread
     override fun onDestroy() {
+        Log.d("APM", "RNTP service is destroyed.")
         super.onDestroy()
         if (::player.isInitialized) {
             mediaSession.release()
@@ -858,6 +866,39 @@ class MusicService : HeadlessJsMediaService() {
     @MainThread
     inner class MusicBinder : Binder() {
         val service = this@MusicService
+    }
+
+    private inner class DummyCallback: MediaLibrarySession.Callback {
+        private val rootItem = buildMediaItem(title = "ROOT Folder", mediaId = "ROOT-ID", isPlayable = false)
+        private val dummyItem = buildMediaItem(title = "Rfff", mediaId = "aaa", isPlayable = false)
+
+        @OptIn(UnstableApi::class)
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            Log.d("APM", "Dummy connection via: ${controller.packageName}")
+            selfWake(controller.packageName)
+            return super.onConnect(session, controller)
+        }
+
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, null))
+        }
+        override fun onGetChildren(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            return Futures.immediateFuture(LibraryResult.ofItemList(listOf(dummyItem), null))
+        }
     }
 
     private inner class APMMediaSessionCallback: MediaLibrarySession.Callback {

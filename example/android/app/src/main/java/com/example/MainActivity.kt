@@ -1,14 +1,20 @@
 package com.example;
 
 import android.content.Intent
+import android.os.Bundle
 import com.doublesymmetry.trackplayer.service.MusicService
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
-import timber.log.Timber
+import android.util.Log
 
 class MainActivity : ReactActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d("APM", "attempt to start activity")
+        super.onCreate(savedInstanceState)
+    }
 
     /**
      * Returns the name of the main component registered from JavaScript. This is used to schedule
