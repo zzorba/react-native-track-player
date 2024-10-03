@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
+import android.util.Log
 import androidx.annotation.MainThread
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
@@ -71,7 +72,9 @@ class MusicService : HeadlessJsMediaService() {
 
     @ExperimentalCoroutinesApi
     override fun onCreate() {
-        Timber.tag("GVA-RNTP").d("RNTP musicservice created.")
+        Log.d("APM", "RNTP musicservice created.")
+
+        mediaSession = DummySession(this, this@MusicService).mediaSession
         super.onCreate()
     }
 
@@ -118,7 +121,7 @@ class MusicService : HeadlessJsMediaService() {
     private var commandStarted = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Timber.tag("APM").d("onStartCommand: ${intent?.action}")
+        Log.d("APM", "onStartCommand: ${intent?.action}, ${intent?.`package`}")
         // HACK: Why is onPlay triggering onStartCommand??
         if (!commandStarted) {
             commandStarted = true
@@ -138,6 +141,7 @@ class MusicService : HeadlessJsMediaService() {
      * information see https://github.com/doublesymmetry/react-native-track-player/issues/1666
      */
     private fun startAndStopEmptyNotificationToAvoidANR() {
+        Log.d("APM", "startAndStopEmptyNotificationToAvoidANR")
         val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notificationManager.createNotificationChannel(NotificationChannel(
@@ -175,7 +179,7 @@ class MusicService : HeadlessJsMediaService() {
             return
         }
 
-        Timber.tag("GVA-RNTP").d("RNTP musicservice set up.")
+        Log.d("APM", "RNTP musicservice set up.")
         val mPlayerOptions = PlayerOptions(
             cacheSize = playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong() ?: 0,
             audioContentType = when(playerOptions?.getString(ANDROID_AUDIO_CONTENT_TYPE)) {
@@ -751,7 +755,7 @@ class MusicService : HeadlessJsMediaService() {
     @MainThread
     override fun onBind(intent: Intent?): IBinder? {
         val intentAction = intent?.action
-        Timber.tag("APM12").d("%s: .${this::mediaSession.isInitialized}", intentAction)
+        Log.d("APM", "onbind: $intentAction", )
         return if (intentAction != null) {
             super.onBind(intent)
         } else {
@@ -787,23 +791,25 @@ class MusicService : HeadlessJsMediaService() {
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
-        Timber.tag("APM").d("%s: .${this::mediaSession.isInitialized}", controllerInfo.packageName)
-        return if (this::mediaSession.isInitialized) {
+        Log.d("APM", controllerInfo.packageName)
+        return if (this::player.isInitialized) {
             mediaSession
         } else {
+            val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
+            Log.d("APM", "${reactActivity == null}, ${reactActivity?.isDestroyed}," +
+                    "${Settings.canDrawOverlays(this)}")
             if (controllerInfo.packageName in arrayOf<String>(
                     "com.android.systemui",
                     "com.example.android.mediacontroller",
-                    "com.google.android.projection.gearhead"
+                    "com.google.android.projection.gearhead",
+                    "android.media.session.MediaController"
                 )) {
-                val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
                 if (
                 // HACK: validate reactActivity is present; if not, send wake intent
                     (reactActivity == null || reactActivity.isDestroyed)
-                    && Settings.canDrawOverlays(this@MusicService)
+                    && Settings.canDrawOverlays(this)
                 ) {
-                    Timber.tag("APM")
-                        .d("%s is in the white list of waking activity.", controllerInfo.packageName)
+                    Log.d("APM", "${controllerInfo.packageName} is in the white list of waking activity.")
                     val activityIntent = packageManager.getLaunchIntentForPackage(packageName)
                     activityIntent!!.data = Uri.parse("trackplayer://service-bound")
                     activityIntent.action = Intent.ACTION_VIEW
@@ -814,12 +820,11 @@ class MusicService : HeadlessJsMediaService() {
                             ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
                     }
                     startActivity(activityIntent, activityOptions.toBundle())
+                    return mediaSession
                 } else {
-                    Timber.tag("RNTP-AA")
-                        .d("%s cannot wake up the activity.", controllerInfo.packageName)
+                    Log.d("APM", "${controllerInfo.packageName} cannot wake up the activity.")
                 }
             }
-
             null
         }
     }
@@ -866,7 +871,7 @@ class MusicService : HeadlessJsMediaService() {
             session: MediaSession,
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
-            Timber.tag("APM").d("connection via: ${controller.packageName}")
+            Log.d("APM", "connection via: ${controller.packageName}")
             return if (session.isMediaNotificationController(controller)) {
                 MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                     .setCustomLayout(customLayout)
@@ -893,7 +898,7 @@ class MusicService : HeadlessJsMediaService() {
             browser: MediaSession.ControllerInfo,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<MediaItem>> {
-            Timber.tag("APM").d("acquiring root: ${browser.packageName}")
+            Log.d("APM", "acquiring root: ${browser.packageName}")
             return Futures.immediateFuture(LibraryResult.ofItem(rootItem, null))
         }
 
