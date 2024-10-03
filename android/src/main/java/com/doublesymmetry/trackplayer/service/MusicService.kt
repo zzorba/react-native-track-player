@@ -17,6 +17,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.LibraryResult
 import androidx.media3.common.MediaItem
+import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionCommands
@@ -64,6 +65,7 @@ class MusicService : HeadlessJsMediaService() {
         MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
     private var sessionCommands: SessionCommands? = null
     private var playerCommands: Player.Commands? = null
+    private var customLayout: List<CommandButton> = listOf()
 
     @ExperimentalCoroutinesApi
     override fun onCreate() {
@@ -276,7 +278,7 @@ class MusicService : HeadlessJsMediaService() {
                 else -> { }
             }
         }
-        val customLayout = customActionsList?.map {
+        customLayout = customActionsList?.map {
                 v -> CustomButton(
             displayName = v,
             sessionCommand = v,
@@ -822,11 +824,15 @@ class MusicService : HeadlessJsMediaService() {
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
             Timber.tag("APM").d("connection via: ${controller.packageName}")
-            return super.onConnect(session, controller)
-            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
-                .setAvailableSessionCommands(sessionCommands ?: MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS)
-                .setAvailablePlayerCommands(playerCommands ?: MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
-                .build()
+            return if (session.isMediaNotificationController(controller)) {
+                MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                    .setCustomLayout(customLayout)
+                    .setAvailableSessionCommands(sessionCommands ?: MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS)
+                    .setAvailablePlayerCommands(playerCommands ?: MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
+                    .build()
+            } else {
+                super.onConnect(session, controller)
+            }
         }
 
         override fun onCustomCommand(
