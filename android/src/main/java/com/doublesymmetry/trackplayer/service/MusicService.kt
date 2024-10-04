@@ -770,10 +770,14 @@ class MusicService : HeadlessJsMediaService() {
         return super.onUnbind(intent)
     }
 
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        // https://github.com/androidx/media/issues/843#issuecomment-1860555950
+        super.onUpdateNotification(session, true)
+    }
+
     @MainThread
     override fun onTaskRemoved(rootIntent: Intent?) {
         onUnbind(rootIntent)
-        super.onTaskRemoved(rootIntent)
         Log.d("APM", "onTaskRemoved: ${::player.isInitialized}, $appKilledPlaybackBehavior")
         if (!::player.isInitialized) {
             mediaSession.release()

@@ -27,8 +27,4 @@ class MainActivity : ReactActivity() {
     override fun createReactActivityDelegate(): ReactActivityDelegate =
         DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
 
-    override fun onDestroy() {
-        // Log.d("APM", "on destroy: ${stopService(Intent(this, MusicService::class.java))}")
-        super.onDestroy()
-    }
 }
