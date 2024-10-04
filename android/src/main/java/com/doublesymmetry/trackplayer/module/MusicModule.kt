@@ -225,7 +225,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @ReactMethod
-    fun setupPlayer(data: ReadableMap?, promise: Promise) {
+    fun setupPlayer(data: ReadableMap?, background: Boolean = false, promise: Promise) {
         if (isServiceBound) {
             promise.reject(
                 "player_already_initialized",
@@ -233,6 +233,18 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             )
             return
         }
+
+        // prevent crash Fatal Exception: android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException
+        if (!background
+            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+            && AppForegroundTracker.backgrounded) {
+            promise.reject(
+                "android_cannot_setup_player_in_background",
+                "On Android the app must be in the foreground when setting up the player."
+            )
+            return
+        }
+
 
         val bundledData = Arguments.toBundle(data)
 

@@ -9,11 +9,12 @@ export const DefaultAudioServiceBehaviour =
   AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification;
 
 const setupPlayer = async (
-  options: Parameters<typeof TrackPlayer.setupPlayer>[0]
+  options: Parameters<typeof TrackPlayer.setupPlayer>[0],
+  background = false
 ) => {
   const setup = async () => {
     try {
-      await TrackPlayer.setupPlayer(options);
+      await TrackPlayer.setupPlayer(options, background);
     } catch (error) {
       return (error as Error & { code?: string }).code;
     }
@@ -26,13 +27,16 @@ const setupPlayer = async (
   }
 };
 let arr = false;
-export const SetupService = async () => {
+export const SetupService = async (background = false) => {
   if (arr) return;
   arr = true;
   console.log('setup service2');
-  await setupPlayer({
-    autoHandleInterruptions: true,
-  });
+  await setupPlayer(
+    {
+      autoHandleInterruptions: true,
+    },
+    background
+  );
   console.log('setup service2');
   await TrackPlayer.updateOptions({
     android: {

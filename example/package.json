@@ -34,7 +34,7 @@
     "react-dom": "^18.0.2",
     "react-native": "0.75.3",
     "react-native-track-player": "link:../",
-    "react-native-vector-icons": "^10.0.0",
+    "react-native-vector-icons": "^10.2.0",
     "react-native-web": "^0.18.10",
     "react-native-windows": "0.71.12",
     "react-scripts": "5.0.1",

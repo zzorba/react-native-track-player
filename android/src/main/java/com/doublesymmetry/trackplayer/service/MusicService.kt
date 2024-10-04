@@ -765,30 +765,38 @@ class MusicService : HeadlessJsMediaService() {
         }
     }
 
+    override fun onUnbind(intent: Intent?): Boolean {
+        Log.d("APM", "unbind: ${intent?.action}")
+        return super.onUnbind(intent)
+    }
+
     @MainThread
     override fun onTaskRemoved(rootIntent: Intent?) {
         onUnbind(rootIntent)
         super.onTaskRemoved(rootIntent)
-        Log.d("APM", "onTaskRemoved: ${::player.isInitialized}, ${appKilledPlaybackBehavior
-        }")
-        if (!::player.isInitialized) return
+        Log.d("APM", "onTaskRemoved: ${::player.isInitialized}, $appKilledPlaybackBehavior")
+        if (!::player.isInitialized) {
+            mediaSession.release()
+            return
+        }
 
         when (appKilledPlaybackBehavior) {
             AppKilledPlaybackBehavior.PAUSE_PLAYBACK -> player.pause()
             AppKilledPlaybackBehavior.STOP_PLAYBACK_AND_REMOVE_NOTIFICATION -> {
                 Log.d("APM", "onTaskRemoved: Killing service")
+                mediaSession.release()
                 player.clear()
                 player.stop()
                 // HACK: the service first stops, then starts, then call onTaskRemove. Why?
                 player.destroy()
-                mediaSession.release()
+                scope.cancel()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     stopForeground(STOP_FOREGROUND_REMOVE)
                 } else {
                     @Suppress("DEPRECATION")
                     stopForeground(true)
                 }
-
+                onDestroy()
                 // https://github.com/androidx/media/issues/27#issuecomment-1456042326
                 stopSelf()
                 exitProcess(0)
@@ -858,13 +866,13 @@ class MusicService : HeadlessJsMediaService() {
     @MainThread
     override fun onDestroy() {
         Log.d("APM", "RNTP service is destroyed.")
-        super.onDestroy()
         if (::player.isInitialized) {
             mediaSession.release()
             player.destroy()
         }
 
         progressUpdateJob?.cancel()
+        super.onDestroy()
     }
 
     @MainThread
@@ -884,7 +892,9 @@ class MusicService : HeadlessJsMediaService() {
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
             Log.d("APM", "connection via: ${controller.packageName}")
-            // selfWake(controller.packageName)
+            if (controller.packageName != this@MusicService.packageName) {
+                onStartCommand(null, 0, 0)
+            }
             return if (session.isMediaNotificationController(controller)) {
                 MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                     .setCustomLayout(customLayout)

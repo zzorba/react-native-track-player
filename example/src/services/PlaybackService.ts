@@ -5,7 +5,7 @@ import { QueueInitialTracksService } from './QueueInitialTracksService';
 
 export async function PlaybackService() {
   (async () => {
-    await SetupService();
+    await SetupService(true);
     await QueueInitialTracksService();
   })();
   console.log('registering playback listeners');
