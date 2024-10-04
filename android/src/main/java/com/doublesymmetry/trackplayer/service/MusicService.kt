@@ -61,6 +61,7 @@ class MusicService : HeadlessJsMediaService() {
     private lateinit var player: QueuedAudioPlayer
     private val binder = MusicBinder()
     private val scope = MainScope()
+    private lateinit var fakePlayer: ExoPlayer
     private lateinit var mediaSession: MediaLibrarySession
     private var progressUpdateJob: Job? = null
     var mediaTree: Map<String, List<MediaItem>> = HashMap()
@@ -75,7 +76,7 @@ class MusicService : HeadlessJsMediaService() {
     @ExperimentalCoroutinesApi
     override fun onCreate() {
         Log.d("APM", "RNTP musicservice created.")
-        val fakePlayer = ExoPlayer.Builder(this).build()
+        fakePlayer = ExoPlayer.Builder(this).build()
         mediaSession = MediaLibrarySession.Builder(this, fakePlayer, DummyCallback() ).build()
         super.onCreate()
     }
@@ -205,6 +206,8 @@ class MusicService : HeadlessJsMediaService() {
 
         player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
         mediaSession.release()
+        fakePlayer.release()
+        Log.d("APMCCC", mediaSession.connectedControllers.toString())
         mediaSession = MediaLibrarySession
             .Builder(this, player.player, APMMediaSessionCallback())
             .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
@@ -793,12 +796,12 @@ class MusicService : HeadlessJsMediaService() {
         }
     }
 
-    private fun selfWake(packageName: String) {
+    private fun selfWake(clientPackageName: String) {
         val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
         Log.d("APM", "${reactNativeHost.reactInstanceManager.currentReactContext == null}," +
                 " ${reactActivity == null}, ${reactActivity?.isDestroyed}," +
                 "${Settings.canDrawOverlays(this)}")
-        if (packageName in arrayOf(
+        if (clientPackageName in arrayOf(
                 "com.android.systemui",
                 "com.example.android.mediacontroller",
                 "com.google.android.projection.gearhead"
@@ -809,12 +812,12 @@ class MusicService : HeadlessJsMediaService() {
                 && Settings.canDrawOverlays(this)
             ) {
                 val currentTime = System.currentTimeMillis()
-                Log.d("APM", "wake from $packageName from ${currentTime - lastWake} ago")
+                Log.d("APM", "wake from $clientPackageName from ${currentTime - lastWake} ago")
                 if (currentTime - lastWake < 100000) {
                     return;
                 }
                 lastWake =currentTime
-                Log.d("APM", "$packageName is in the white list of waking activity.")
+                Log.d("APM", "$clientPackageName is in the white list of waking activity.")
                 val activityIntent = packageManager.getLaunchIntentForPackage(packageName)
                 activityIntent!!.data = Uri.parse("trackplayer://service-bound")
                 activityIntent.action = Intent.ACTION_VIEW
@@ -826,7 +829,7 @@ class MusicService : HeadlessJsMediaService() {
                 }
                 this.startActivity(activityIntent, activityOptions.toBundle())
             } else {
-                Log.d("APM", "$packageName cannot wake up the activity.")
+                Log.d("APM", "$clientPackageName cannot wake up the activity.")
             }
         }
     }
