@@ -77,9 +77,17 @@ class MusicService : HeadlessJsMediaService() {
     override fun onCreate() {
         Log.d("APM", "RNTP musicservice created.")
         fakePlayer = ExoPlayer.Builder(this).build()
+        val openAppIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            // Add the Uri data so apps can identify that it was a notification click
+            data = Uri.parse("trackplayer://notification.click")
+            action = Intent.ACTION_VIEW
+        }
         mediaSession = MediaLibrarySession.Builder(this, fakePlayer, APMMediaSessionCallback() )
             .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
             .setId("APM-MediaSession")
+            // https://github.com/androidx/media/issues/1218
+            .setSessionActivity(PendingIntent.getActivity(this, 0, openAppIntent, getPendingIntentFlags()))
             .build()
         super.onCreate()
     }
@@ -947,6 +955,14 @@ class MusicService : HeadlessJsMediaService() {
         ): ListenableFuture<LibraryResult<MediaItem>> {
             emit(MusicEvents.BUTTON_PLAY_FROM_ID, Bundle().apply { putString("id", mediaId) })
             return Futures.immediateFuture(LibraryResult.ofItem(dummyItem, null))
+        }
+    }
+
+    private fun getPendingIntentFlags(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT
+        } else {
+            PendingIntent.FLAG_CANCEL_CURRENT
         }
     }
 
