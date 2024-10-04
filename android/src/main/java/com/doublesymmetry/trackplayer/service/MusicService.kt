@@ -77,7 +77,10 @@ class MusicService : HeadlessJsMediaService() {
     override fun onCreate() {
         Log.d("APM", "RNTP musicservice created.")
         fakePlayer = ExoPlayer.Builder(this).build()
-        mediaSession = MediaLibrarySession.Builder(this, fakePlayer, DummyCallback() ).build()
+        mediaSession = MediaLibrarySession.Builder(this, fakePlayer, APMMediaSessionCallback() )
+            .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
+            .setId("APM-MediaSession")
+            .build()
         super.onCreate()
     }
 
@@ -205,15 +208,8 @@ class MusicService : HeadlessJsMediaService() {
         )
 
         player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
-        mediaSession.release()
         fakePlayer.release()
-        Log.d("APMCCC", mediaSession.connectedControllers.toString())
-        mediaSession = MediaLibrarySession
-            .Builder(this, player.player, APMMediaSessionCallback())
-            .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
-            .setId("APM-MediaSession")
-            // .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
-            .build()
+        mediaSession.player = player.player
         observeEvents()
     }
 
@@ -773,13 +769,19 @@ class MusicService : HeadlessJsMediaService() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         onUnbind(rootIntent)
         super.onTaskRemoved(rootIntent)
+        Log.d("APM", "onTaskRemoved: ${::player.isInitialized}, ${appKilledPlaybackBehavior
+        }")
         if (!::player.isInitialized) return
 
         when (appKilledPlaybackBehavior) {
             AppKilledPlaybackBehavior.PAUSE_PLAYBACK -> player.pause()
             AppKilledPlaybackBehavior.STOP_PLAYBACK_AND_REMOVE_NOTIFICATION -> {
+                Log.d("APM", "onTaskRemoved: Killing service")
                 player.clear()
                 player.stop()
+                // HACK: the service first stops, then starts, then call onTaskRemove. Why?
+                player.destroy()
+                mediaSession.release()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     stopForeground(STOP_FOREGROUND_REMOVE)
                 } else {
@@ -788,7 +790,6 @@ class MusicService : HeadlessJsMediaService() {
                 }
 
                 // https://github.com/androidx/media/issues/27#issuecomment-1456042326
-                onUnbind(rootIntent)
                 stopSelf()
                 exitProcess(0)
             }
@@ -871,39 +872,6 @@ class MusicService : HeadlessJsMediaService() {
         val service = this@MusicService
     }
 
-    private inner class DummyCallback: MediaLibrarySession.Callback {
-        private val rootItem = buildMediaItem(title = "ROOT Folder", mediaId = "ROOT-ID", isPlayable = false)
-        private val dummyItem = buildMediaItem(title = "Rfff", mediaId = "aaa", isPlayable = false)
-
-        @OptIn(UnstableApi::class)
-        override fun onConnect(
-            session: MediaSession,
-            controller: MediaSession.ControllerInfo
-        ): MediaSession.ConnectionResult {
-            Log.d("APM", "Dummy connection via: ${controller.packageName}")
-            selfWake(controller.packageName)
-            return super.onConnect(session, controller)
-        }
-
-        override fun onGetLibraryRoot(
-            session: MediaLibrarySession,
-            browser: MediaSession.ControllerInfo,
-            params: LibraryParams?
-        ): ListenableFuture<LibraryResult<MediaItem>> {
-            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, null))
-        }
-        override fun onGetChildren(
-            session: MediaLibrarySession,
-            browser: MediaSession.ControllerInfo,
-            parentId: String,
-            page: Int,
-            pageSize: Int,
-            params: LibraryParams?
-        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-            return Futures.immediateFuture(LibraryResult.ofItemList(listOf(dummyItem), null))
-        }
-    }
-
     private inner class APMMediaSessionCallback: MediaLibrarySession.Callback {
 
         val rootItem = buildMediaItem(title = "ROOT Folder", mediaId = "ROOT-ID", isPlayable = false)
@@ -916,6 +884,7 @@ class MusicService : HeadlessJsMediaService() {
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
             Log.d("APM", "connection via: ${controller.packageName}")
+            // selfWake(controller.packageName)
             return if (session.isMediaNotificationController(controller)) {
                 MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                     .setCustomLayout(customLayout)

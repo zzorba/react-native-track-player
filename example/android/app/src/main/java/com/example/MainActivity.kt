@@ -1,8 +1,6 @@
 package com.example;
 
-import android.content.Intent
 import android.os.Bundle
-import com.doublesymmetry.trackplayer.service.MusicService
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -30,6 +28,7 @@ class MainActivity : ReactActivity() {
         DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
 
     override fun onDestroy() {
+        // Log.d("APM", "on destroy: ${stopService(Intent(this, MusicService::class.java))}")
         super.onDestroy()
     }
 }

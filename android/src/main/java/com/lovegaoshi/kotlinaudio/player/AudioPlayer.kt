@@ -48,6 +48,7 @@ abstract class AudioPlayer internal constructor(
 
     var exoPlayer: ExoPlayer
     var player: ForwardingPlayer
+    private var playerListener = PlayerListener()
     private val scope = MainScope()
     private var cache: SimpleCache? = null
     val playerEventHolder = PlayerEventHolder()
@@ -167,7 +168,7 @@ abstract class AudioPlayer internal constructor(
             .setContentType(setContentType(options.audioContentType))
             .build();
         exoPlayer.setAudioAttributes(audioAttributes, options.handleAudioFocus);
-        exoPlayer.addListener(PlayerListener())
+        exoPlayer.addListener(playerListener)
         playerEventHolder.updateAudioPlayerState(AudioPlayerState.IDLE)
 
         player = object : ForwardingPlayer(exoPlayer) {
@@ -324,6 +325,7 @@ abstract class AudioPlayer internal constructor(
     open fun destroy() {
         focusManager.abandonAudioFocusIfHeld()
         stop()
+        exoPlayer.removeListener(playerListener)
         exoPlayer.release()
         cache?.release()
         cache = null
