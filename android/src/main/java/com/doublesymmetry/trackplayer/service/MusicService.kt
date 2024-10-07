@@ -799,7 +799,8 @@ class MusicService : HeadlessJsMediaService() {
                 mediaSession.release()
                 player.clear()
                 player.stop()
-                // HACK: the service first stops, then starts, then call onTaskRemove. Why?
+                // HACK: the service first stops, then starts, then call onTaskRemove. Why system
+                // registers the service being restarted?
                 player.destroy()
                 scope.cancel()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -817,42 +818,35 @@ class MusicService : HeadlessJsMediaService() {
         }
     }
 
-    private fun selfWake(clientPackageName: String) {
+    private fun selfWake(clientPackageName: String): Boolean {
         val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
-        Log.d("APM", "${reactNativeHost.reactInstanceManager.currentReactContext == null}," +
-                " ${reactActivity == null}, ${reactActivity?.isDestroyed}," +
-                "${Settings.canDrawOverlays(this)}")
-        if (clientPackageName in arrayOf(
-                "com.android.systemui",
-                "com.example.android.mediacontroller",
-                "com.google.android.projection.gearhead"
-            )) {
-            if (
-            // HACK: validate reactActivity is present; if not, send wake intent
-                (reactActivity == null || reactActivity.isDestroyed)
-                && Settings.canDrawOverlays(this)
-            ) {
-                val currentTime = System.currentTimeMillis()
-                Log.d("APM", "wake from $clientPackageName from ${currentTime - lastWake} ago")
-                if (currentTime - lastWake < 100000) {
-                    return;
-                }
-                lastWake =currentTime
-                Log.d("APM", "$clientPackageName is in the white list of waking activity.")
-                val activityIntent = packageManager.getLaunchIntentForPackage(packageName)
-                activityIntent!!.data = Uri.parse("trackplayer://service-bound")
-                activityIntent.action = Intent.ACTION_VIEW
-                activityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                var activityOptions = ActivityOptions.makeBasic()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    activityOptions = activityOptions.setPendingIntentBackgroundActivityStartMode(
-                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                }
-                this.startActivity(activityIntent, activityOptions.toBundle())
-            } else {
-                Log.d("APM", "$clientPackageName cannot wake up the activity.")
+        if (
+        // HACK: validate reactActivity is present; if not, send wake intent
+            (reactActivity == null || reactActivity.isDestroyed)
+            && Settings.canDrawOverlays(this)
+        ) {
+            val currentTime = System.currentTimeMillis()
+            Log.d("APM", "wake from $clientPackageName from ${currentTime - lastWake} ago")
+            if (currentTime - lastWake < 100000) {
+                return false
             }
+            lastWake = currentTime
+            Log.d("APM", "$clientPackageName is in the white list of waking activity.")
+            val activityIntent = packageManager.getLaunchIntentForPackage(packageName)
+            activityIntent!!.data = Uri.parse("trackplayer://service-bound")
+            activityIntent.action = Intent.ACTION_VIEW
+            activityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            var activityOptions = ActivityOptions.makeBasic()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                activityOptions = activityOptions.setPendingIntentBackgroundActivityStartMode(
+                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+            }
+            this.startActivity(activityIntent, activityOptions.toBundle())
+            return true
+        } else {
+            Log.d("APM", "$clientPackageName cannot wake up the activity.")
         }
+        return false
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession {
@@ -893,6 +887,8 @@ class MusicService : HeadlessJsMediaService() {
     }
 
     private inner class APMMediaSessionCallback: MediaLibrarySession.Callback {
+        // HACK: I'm sure most of the callbacks were not implemented correctly.
+        // ATM I only care that andorid auto still functions.
 
         private val rootItem = buildMediaItem(title = "root", mediaId = "/", isPlayable = false)
 
@@ -903,8 +899,16 @@ class MusicService : HeadlessJsMediaService() {
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
             Log.d("APM", "connection via: ${controller.packageName}")
-            if (controller.packageName != this@MusicService.packageName) {
-                onStartCommand(null, 0, 0)
+
+            if (controller.packageName in arrayOf(
+                    "com.android.systemui",
+                    "com.example.android.mediacontroller",
+                    "com.google.android.projection.gearhead"
+                )) {
+                // HACK: attempt to wake up activity (for legacy APM). if not, start headless.
+                if (!selfWake(controller.packageName)) {
+                    onStartCommand(null, 0, 0)
+                }
             }
             return if (session.isMediaNotificationController(controller)) {
                 MediaSession.ConnectionResult.AcceptedResultBuilder(session)
@@ -944,7 +948,7 @@ class MusicService : HeadlessJsMediaService() {
             pageSize: Int,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-            Log.d("APM", "acquiring children: ${browser.packageName}, $parentId")
+            emit(MusicEvents.BUTTON_BROWSE, Bundle().apply { putString("mediaId", parentId) });
             return Futures.immediateFuture(LibraryResult.ofItemList(mediaTree[parentId] ?: listOf(), null))
         }
 
@@ -973,8 +977,34 @@ class MusicService : HeadlessJsMediaService() {
             controller: MediaSession.ControllerInfo,
             mediaItems: MutableList<MediaItem>
         ): ListenableFuture<MutableList<MediaItem>> {
-            Log.d("APM", "searching?: ${controller.packageName}, ${mediaItems[0].mediaId}")
+            Log.d("APM", "addMediaItem: ${controller.packageName}, ${mediaItems[0].mediaId}, ${mediaItems.size}")
             return super.onAddMediaItems(mediaSession, controller, mediaItems)
+        }
+
+        override fun onSetMediaItems(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>,
+            startIndex: Int,
+            startPositionMs: Long
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            Log.d("APM", "setMediaItem: ${controller.packageName}, ${mediaItems[0].mediaId}")
+            if (mediaItems[0].requestMetadata.searchQuery == null) {
+                emit(MusicEvents.BUTTON_PLAY_FROM_ID, Bundle().apply {
+                    putString("id", mediaItems[0].mediaId)
+                })
+            } else {
+                emit(MusicEvents.BUTTON_PLAY_FROM_SEARCH, Bundle().apply {
+                    putString("query", mediaItems[0].requestMetadata.searchQuery)
+                })
+            }
+            return super.onSetMediaItems(
+                mediaSession,
+                controller,
+                mediaItems,
+                startIndex,
+                startPositionMs
+            )
         }
 
         override fun onMediaButtonEvent(

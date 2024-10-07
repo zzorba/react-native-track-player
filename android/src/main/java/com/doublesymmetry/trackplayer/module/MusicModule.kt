@@ -138,7 +138,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             }
         }
         return buildMediaItem(
-            isPlayable = hashmap["playable"]?.toInt() == 1,
+            isPlayable = hashmap["playable"]?.toInt() != 1,
             title = hashmap["title"],
             mediaId = hashmap["mediaId"] ?: "no-media-id",
             imageUri = if (iconUri != null) Uri.parse(iconUri) else null,
@@ -710,7 +710,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         if (verifyServiceBoundOrReject(callback)) return@launch
         val mediaItemsMap = mediaItems.toHashMap()
         musicService.mediaTree = mediaItemsMap.mapValues { readableArrayToMediaItems(it.value as ArrayList<HashMap<String, String>>) }
-        Timber.d("refreshing browseTree")
+        Timber.tag("APM").d("refreshing browseTree")
         musicService.notifyChildrenChanged()
         callback.resolve(musicService.mediaTree.toString())
     }
