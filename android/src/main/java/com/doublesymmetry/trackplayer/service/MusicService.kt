@@ -894,8 +894,7 @@ class MusicService : HeadlessJsMediaService() {
 
     private inner class APMMediaSessionCallback: MediaLibrarySession.Callback {
 
-        val rootItem = buildMediaItem(title = "ROOT Folder", mediaId = "ROOT-ID", isPlayable = false)
-        val dummyItem = buildMediaItem(title = "dummy", mediaId = "dummy", isPlayable = false)
+        private val rootItem = buildMediaItem(title = "root", mediaId = "/", isPlayable = false)
 
         // Configure commands available to the controller in onConnect()
         @OptIn(UnstableApi::class)
@@ -945,7 +944,8 @@ class MusicService : HeadlessJsMediaService() {
             pageSize: Int,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-            return Futures.immediateFuture(LibraryResult.ofItemList(listOf(dummyItem), null))
+            Log.d("APM", "acquiring children: ${browser.packageName}, $parentId")
+            return Futures.immediateFuture(LibraryResult.ofItemList(mediaTree[parentId] ?: listOf(), null))
         }
 
         override fun onGetItem(
@@ -953,9 +953,51 @@ class MusicService : HeadlessJsMediaService() {
             browser: MediaSession.ControllerInfo,
             mediaId: String
         ): ListenableFuture<LibraryResult<MediaItem>> {
+            Log.d("APM", "acquiring item: ${browser.packageName}, $mediaId")
             emit(MusicEvents.BUTTON_PLAY_FROM_ID, Bundle().apply { putString("id", mediaId) })
-            return Futures.immediateFuture(LibraryResult.ofItem(dummyItem, null))
+            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, null))
         }
+
+        override fun onSearch(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            query: String,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<Void>> {
+            Log.d("APM", "searching: ${browser.packageName}, $query")
+            return super.onSearch(session, browser, query, params)
+        }
+
+        override fun onAddMediaItems(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>
+        ): ListenableFuture<MutableList<MediaItem>> {
+            Log.d("APM", "searching?: ${controller.packageName}, ${mediaItems[0].mediaId}")
+            return super.onAddMediaItems(mediaSession, controller, mediaItems)
+        }
+
+        override fun onMediaButtonEvent(
+            session: MediaSession,
+            controllerInfo: MediaSession.ControllerInfo,
+            intent: Intent
+        ): Boolean {
+            Log.d("APM", "onMediaBtn: ${controllerInfo.packageName}, $intent")
+            return super.onMediaButtonEvent(session, controllerInfo, intent)
+        }
+
+        override fun onGetSearchResult(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            query: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            Log.d("APM", "searching2: ${browser.packageName}, $query")
+            return super.onGetSearchResult(session, browser, query, page, pageSize, params)
+        }
+
     }
 
     private fun getPendingIntentFlags(): Int {
