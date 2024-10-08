@@ -1028,6 +1028,15 @@ class MusicService : HeadlessJsMediaService() {
             return super.onGetSearchResult(session, browser, query, page, pageSize, params)
         }
 
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            emit(MusicEvents.PLAYBACK_RESUME, Bundle().apply {
+                putString("package", controller.packageName)
+            })
+            return super.onPlaybackResumption(mediaSession, controller)
+        }
     }
 
     private fun getPendingIntentFlags(): Int {
