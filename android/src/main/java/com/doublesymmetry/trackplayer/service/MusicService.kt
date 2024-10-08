@@ -268,6 +268,9 @@ class MusicService : HeadlessJsMediaService() {
             Player.COMMAND_GET_VOLUME,
             Player.COMMAND_GET_DEVICE_VOLUME,
             Player.COMMAND_GET_TEXT,
+            Player.COMMAND_SEEK_TO_MEDIA_ITEM,
+            Player.COMMAND_PREPARE,
+            Player.COMMAND_RELEASE,
         )
         notificationCapabilities.forEach {
             when (it) {
@@ -279,9 +282,11 @@ class MusicService : HeadlessJsMediaService() {
                 }
                 Capability.SKIP_TO_NEXT -> {
                     playerCommandsBuilder.add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                    playerCommandsBuilder.add(Player.COMMAND_SEEK_TO_NEXT)
                 }
                 Capability.SKIP_TO_PREVIOUS -> {
                     playerCommandsBuilder.add(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                    playerCommandsBuilder.add(Player.COMMAND_SEEK_TO_PREVIOUS)
                 }
                 Capability.JUMP_FORWARD -> {
                     playerCommandsBuilder.add(Player.COMMAND_SEEK_FORWARD)

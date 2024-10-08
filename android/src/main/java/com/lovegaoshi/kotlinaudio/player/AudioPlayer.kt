@@ -177,7 +177,7 @@ abstract class AudioPlayer internal constructor(
                 if (options.alwaysShowNext) {
                     return when (command) {
                         COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> true
-                        COMMAND_SEEK_TO_NEXT -> true
+                        COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> true
                         else -> super.isCommandAvailable(command)
                     }
                 }
@@ -188,11 +188,12 @@ abstract class AudioPlayer internal constructor(
                 if (options.alwaysShowNext) {
                     return super.getAvailableCommands().buildUpon()
                         .add(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-                        .add(COMMAND_SEEK_TO_NEXT)
+                        .add(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
                         .build()
                 }
                 return super.getAvailableCommands()
             }
+            
             override fun play() {
                 playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PLAY)
             }
@@ -205,7 +206,15 @@ abstract class AudioPlayer internal constructor(
                 playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.NEXT)
             }
 
+            override fun seekToNextMediaItem() {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.NEXT)
+            }
+
             override fun seekToPrevious() {
+                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PREVIOUS)
+            }
+
+            override fun seekToPreviousMediaItem() {
                 playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PREVIOUS)
             }
 
