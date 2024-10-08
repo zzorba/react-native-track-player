@@ -958,7 +958,7 @@ class MusicService : HeadlessJsMediaService() {
             mediaId: String
         ): ListenableFuture<LibraryResult<MediaItem>> {
             Log.d("APM", "acquiring item: ${browser.packageName}, $mediaId")
-            emit(MusicEvents.BUTTON_PLAY_FROM_ID, Bundle().apply { putString("id", mediaId) })
+            // emit(MusicEvents.BUTTON_PLAY_FROM_ID, Bundle().apply { putString("id", mediaId) })
             return Futures.immediateFuture(LibraryResult.ofItem(rootItem, null))
         }
 
