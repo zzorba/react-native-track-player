@@ -22,6 +22,7 @@ import type { RemoteSkipEvent } from './RemoteSkipEvent';
 import type { PlaybackAnimatedVolumeChangedEvent } from './PlaybackAnimatedVolumeChangedEvent';
 import type { RemoteBrowseEvent } from './RemoteBrowseEvent';
 import type { RemoteCustomActionEvent } from './RemoteCustomActionEvent';
+import type { PlaybackResumeEvent } from './PlaybackResumeEvent';
 
 export type EventPayloadByEvent = {
   [Event.PlayerError]: PlayerErrorEvent;
@@ -51,6 +52,7 @@ export type EventPayloadByEvent = {
   [Event.RemoteBookmark]: never;
   [Event.PlaybackAnimatedVolumeChanged]: PlaybackAnimatedVolumeChangedEvent;
   [Event.RemoteBrowse]: RemoteBrowseEvent;
+  [Event.PlaybackResume]: PlaybackResumeEvent;
   [Event.RemoteCustomAction]: RemoteCustomActionEvent;
   [Event.MetadataChapterReceived]: AudioMetadataReceivedEvent;
   [Event.MetadataTimedReceived]: AudioMetadataReceivedEvent;

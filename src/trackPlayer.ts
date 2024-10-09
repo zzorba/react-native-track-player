@@ -61,8 +61,13 @@ function resolveImportedAsset(id?: number) {
  * @param options The options to initialize the player with.
  * @see https://rntp.dev/docs/api/functions/lifecycle
  */
-export async function setupPlayer(options: PlayerOptions = {}): Promise<void> {
-  return TrackPlayer.setupPlayer(options);
+export async function setupPlayer(
+  options: PlayerOptions = {},
+  background = false
+): Promise<void> {
+  return Platform.OS === 'android'
+    ? TrackPlayer.setupPlayer(options, background)
+    : TrackPlayer.setupPlayer(options);
 }
 
 /**

@@ -13,9 +13,10 @@
  import android.content.Intent;
  import android.os.IBinder;
  import android.os.PowerManager;
+ import android.util.Log;
 
  import androidx.annotation.Nullable;
- import androidx.media.MediaBrowserServiceCompat;
+ import androidx.media3.session.MediaLibraryService;
  import com.facebook.infer.annotation.Assertions;
  import com.facebook.react.bridge.ReactContext;
  import com.facebook.react.bridge.UiThreadUtil;
@@ -44,21 +45,25 @@
   * {@link BroadcastReceiver#onReceive}, to make sure the device doesn't go to sleep before the
   * service is started.
   */
- public abstract class HeadlessJsMediaService extends MediaBrowserServiceCompat implements HeadlessJsTaskEventListener {
+
+ public abstract class HeadlessJsMediaService extends MediaLibraryService implements HeadlessJsTaskEventListener {
  
    private final Set<Integer> mActiveTasks = new CopyOnWriteArraySet<>();
    public static @Nullable PowerManager.WakeLock sWakeLock;
 
-
+   private boolean initialized = false;
 
    @Override
    public int onStartCommand(Intent intent, int flags, int startId) {
-     HeadlessJsTaskConfig taskConfig = getTaskConfig(intent);
-     if (taskConfig != null) {
-       startTask(taskConfig);
-       return START_REDELIVER_INTENT;
-     }
-     return START_NOT_STICKY;
+       super.onStartCommand(intent, flags, startId);
+       HeadlessJsTaskConfig taskConfig = getTaskConfig(intent);
+       if (!initialized && taskConfig != null) {
+           // HACK: ensure headlessJsMediaService tasks are only registered once.
+           initialized = true;
+           startTask(taskConfig);
+           return START_REDELIVER_INTENT;
+       }
+       return START_NOT_STICKY;
    }
  
    /**

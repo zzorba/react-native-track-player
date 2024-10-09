@@ -1,17 +1,18 @@
 package com.doublesymmetry.trackplayer.module
 
+import android.annotation.SuppressLint
 import android.content.*
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.net.Uri
 import android.support.v4.media.RatingCompat
-import android.support.v4.media.MediaBrowserCompat.MediaItem
-import android.support.v4.media.MediaDescriptionCompat
+import android.util.Log
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media.utils.MediaConstants
-import com.doublesymmetry.kotlinaudio.models.Capability
-import com.doublesymmetry.kotlinaudio.models.RepeatMode
-import com.doublesymmetry.trackplayer.extensions.NumberExt.Companion.toMilliseconds
+import com.lovegaoshi.kotlinaudio.models.Capability
+import com.lovegaoshi.kotlinaudio.models.RepeatMode
 import com.doublesymmetry.trackplayer.model.State
 import com.doublesymmetry.trackplayer.model.Track
 import com.doublesymmetry.trackplayer.module.MusicEvents.Companion.EVENT_INTENT
@@ -19,8 +20,10 @@ import com.doublesymmetry.trackplayer.service.MusicService
 import com.doublesymmetry.trackplayer.utils.AppForegroundTracker
 import com.doublesymmetry.trackplayer.utils.RejectionException
 import com.facebook.react.bridge.*
-import com.google.android.exoplayer2.DefaultLoadControl.*
-import com.google.android.exoplayer2.Player
+import androidx.media3.common.Player
+import androidx.media3.session.MediaBrowser
+import androidx.media3.session.SessionToken
+import com.doublesymmetry.trackplayer.utils.buildMediaItem
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -34,6 +37,7 @@ import javax.annotation.Nonnull
  */
 class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext),
     ServiceConnection {
+    private lateinit var browser: MediaBrowser
     private var playerOptions: Bundle? = null
     private var isServiceBound = false
     private var playerSetUpPromise: Promise? = null
@@ -90,23 +94,13 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     private fun bundleToTrack(bundle: Bundle): Track {
-        return Track(context, bundle, musicService.ratingType)
+        return Track(context, bundle, 0)
     }
 
     private fun hashmapToMediaItem(hashmap: HashMap<String, String>): MediaItem {
-        val mediaId = hashmap["mediaId"]
-        val title = hashmap["title"]
-        val subtitle = hashmap["subtitle"]
         val mediaUri = hashmap["mediaUri"]
         val iconUri = hashmap["iconUri"]
-        val playableFlag = if (hashmap["playable"]?.toInt() == 1) MediaItem.FLAG_BROWSABLE else MediaItem.FLAG_PLAYABLE
 
-        val mediaDescriptionBuilder = MediaDescriptionCompat.Builder()
-        mediaDescriptionBuilder.setMediaId(mediaId)
-        mediaDescriptionBuilder.setTitle(title)
-        mediaDescriptionBuilder.setSubtitle(subtitle)
-        mediaDescriptionBuilder.setMediaUri(if (mediaUri != null) Uri.parse(mediaUri) else null)
-        mediaDescriptionBuilder.setIconUri(if (iconUri != null) Uri.parse(iconUri) else null)
         val extras = Bundle()
         hashmap["groupTitle"]?.let {
             extras.putString(
@@ -143,9 +137,15 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                     MediaConstants.DESCRIPTION_EXTRAS_KEY_COMPLETION_PERCENTAGE, it)
             }
         }
-
-        mediaDescriptionBuilder.setExtras(extras)
-        return MediaItem(mediaDescriptionBuilder.build(), playableFlag)
+        return buildMediaItem(
+            isPlayable = hashmap["playable"]?.toInt() != 1,
+            title = hashmap["title"],
+            mediaId = hashmap["mediaId"] ?: "no-media-id",
+            imageUri = if (iconUri != null) Uri.parse(iconUri) else null,
+            artist = hashmap["subtitle"],
+            subtitle = hashmap["subtitle"],
+            sourceUri = if (mediaUri != null) Uri.parse(mediaUri) else null
+        )
     }
 
     private fun readableArrayToMediaItems(data: ArrayList<HashMap<String, String>>): MutableList<MediaItem> {
@@ -223,8 +223,9 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @ReactMethod
-    fun setupPlayer(data: ReadableMap?, promise: Promise) {
+    fun setupPlayer(data: ReadableMap?, background: Boolean = false, promise: Promise) {
         if (isServiceBound) {
             promise.reject(
                 "player_already_initialized",
@@ -234,7 +235,9 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         }
 
         // prevent crash Fatal Exception: android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && AppForegroundTracker.backgrounded) {
+        if (!background
+            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+            && AppForegroundTracker.backgrounded) {
             promise.reject(
                 "android_cannot_setup_player_in_background",
                 "On Android the app must be in the foreground when setting up the player."
@@ -242,51 +245,8 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             return
         }
 
-        // Validate buffer keys.
+
         val bundledData = Arguments.toBundle(data)
-        val minBuffer =
-            bundledData?.getDouble(MusicService.MIN_BUFFER_KEY)?.toMilliseconds()?.toInt()
-                ?: DEFAULT_MIN_BUFFER_MS
-        val maxBuffer =
-            bundledData?.getDouble(MusicService.MAX_BUFFER_KEY)?.toMilliseconds()?.toInt()
-                ?: DEFAULT_MAX_BUFFER_MS
-        if (maxBuffer < minBuffer) {
-            promise.reject(
-                "min_buffer_error",
-                "The value for maxBuffer should be greater than or equal to minBuffer."
-            )
-            return
-        }
-        val playBuffer =
-            bundledData?.getDouble(MusicService.PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt()
-                ?: DEFAULT_BUFFER_FOR_PLAYBACK_MS
-        val backBuffer =
-            bundledData?.getDouble(MusicService.BACK_BUFFER_KEY)?.toMilliseconds()?.toInt()
-                ?: DEFAULT_BACK_BUFFER_DURATION_MS
-
-        if (playBuffer < 0) {
-            promise.reject(
-                "play_buffer_error",
-                "The value for playBuffer should be greater than or equal to zero."
-            )
-            return
-        }
-
-        if (backBuffer < 0) {
-            promise.reject(
-                "back_buffer_error",
-                "The value for backBuffer should be greater than or equal to zero."
-            )
-            return
-        }
-
-        if (minBuffer < playBuffer) {
-            promise.reject(
-                "min_buffer_error",
-                "The value for minBuffer should be greater than or equal to playBuffer."
-            )
-            return
-        }
 
         playerSetUpPromise = promise
         playerOptions = bundledData
@@ -302,29 +262,24 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                 IntentFilter(EVENT_INTENT)
             )
         }
+
         val musicModule = this
-        scope.launch {
-            var retries = 0
-            while (true) {
-                try {
-                    Intent(context, MusicService::class.java).also { intent ->
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            context.startForegroundService(intent)
-                        } else {
-                            context.startService(intent)
-                        }
-                        context.bindService(intent, musicModule, Context.BIND_AUTO_CREATE)
-                    }
-                    break
-                } catch (exception: Exception) {
-                    retries += 1
-                    Timber.tag("RNTP").w("Could not initialize service due to %s, await 500 ms...", exception)
-                    if (retries > 10) {
-                        throw exception
-                    }
-                    delay(500)
+        try {
+            Intent(context, MusicService::class.java).also { intent ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
                 }
+                context.bindService(intent, musicModule, Context.BIND_AUTO_CREATE)
+                val sessionToken =
+                    SessionToken(context, ComponentName(context, MusicService::class.java))
+                val browserFuture = MediaBrowser.Builder(context, sessionToken).buildAsync()
+                // browser = browserFuture.get()
             }
+        } catch (exception: Exception) {
+            Timber.tag("RNTP").w(exception, "Could not initialize service")
+            throw exception
         }
     }
 
@@ -424,7 +379,7 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             } else {
                 val context: ReactContext = context
                 val track = musicService.tracks[index]
-                track.setMetadata(context, Arguments.toBundle(map), musicService.ratingType)
+                track.setMetadata(context, Arguments.toBundle(map), 0)
                 musicService.updateMetadataForTrack(index, track)
 
                 callback.resolve(null)
@@ -755,10 +710,8 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         if (verifyServiceBoundOrReject(callback)) return@launch
         val mediaItemsMap = mediaItems.toHashMap()
         musicService.mediaTree = mediaItemsMap.mapValues { readableArrayToMediaItems(it.value as ArrayList<HashMap<String, String>>) }
-        Timber.d("refreshing browseTree")
-        mediaItemsMap.keys.forEach {
-            musicService.notifyChildrenChanged(it)
-        }
+        Timber.tag("APM").d("refreshing browseTree")
+        musicService.notifyChildrenChanged()
         callback.resolve(musicService.mediaTree.toString())
     }
 
@@ -784,7 +737,6 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     @ReactMethod
     fun setPlaybackState(mediaID: String, callback: Promise) = scope.launch {
         if (verifyServiceBoundOrReject(callback)) return@launch
-        musicService.setPlaybackState(mediaID)
         callback.resolve(null)
     }
 }

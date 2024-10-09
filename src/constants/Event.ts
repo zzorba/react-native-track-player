@@ -37,6 +37,11 @@ export enum Event {
    **/
   PlaybackProgressUpdated = 'playback-progress-updated',
   /**
+   * Android media3 playback resumption. most likely require a
+   * headless setup.
+   */
+  PlaybackResume = 'playback-resume-android',
+  /**
    * Fired when the user presses the play button.
    * See https://rntp.dev/docs/api/events#remoteplay
    **/

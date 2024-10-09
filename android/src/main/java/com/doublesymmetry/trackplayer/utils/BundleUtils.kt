@@ -5,6 +5,11 @@ import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.support.v4.media.RatingCompat
+import androidx.media3.common.HeartRating
+import androidx.media3.common.PercentageRating
+import androidx.media3.common.Rating
+import androidx.media3.common.StarRating
+import androidx.media3.common.ThumbRating
 import com.doublesymmetry.trackplayer.R
 import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper
 
@@ -86,17 +91,17 @@ object BundleUtils {
         return if (icon == 0) null else icon
     }
 
-    fun getRating(data: Bundle?, key: String?, ratingType: Int): RatingCompat? {
+    fun getRating(data: Bundle?, key: String?, ratingType: Int): Rating? {
         return if (!data!!.containsKey(key) || ratingType == RatingCompat.RATING_NONE) {
-            RatingCompat.newUnratedRating(ratingType)
+            null
         } else if (ratingType == RatingCompat.RATING_HEART) {
-            RatingCompat.newHeartRating(data.getBoolean(key, true))
+            HeartRating(data.getBoolean(key, true))
         } else if (ratingType == RatingCompat.RATING_THUMB_UP_DOWN) {
-            RatingCompat.newThumbRating(data.getBoolean(key, true))
+            ThumbRating(data.getBoolean(key, true))
         } else if (ratingType == RatingCompat.RATING_PERCENTAGE) {
-            RatingCompat.newPercentageRating(data.getFloat(key, 0f))
+            PercentageRating(data.getFloat(key, 0f))
         } else {
-            RatingCompat.newStarRating(ratingType, data.getFloat(key, 0f))
+            StarRating(5, data.getFloat(key, 0f))
         }
     }
 

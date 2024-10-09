@@ -9,11 +9,12 @@ export const DefaultAudioServiceBehaviour =
   AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification;
 
 const setupPlayer = async (
-  options: Parameters<typeof TrackPlayer.setupPlayer>[0]
+  options: Parameters<typeof TrackPlayer.setupPlayer>[0],
+  background = false
 ) => {
   const setup = async () => {
     try {
-      await TrackPlayer.setupPlayer(options);
+      await TrackPlayer.setupPlayer(options, background);
     } catch (error) {
       return (error as Error & { code?: string }).code;
     }
@@ -25,11 +26,18 @@ const setupPlayer = async (
     await new Promise<void>((resolve) => setTimeout(resolve, 1));
   }
 };
-
-export const SetupService = async () => {
-  await setupPlayer({
-    autoHandleInterruptions: true,
-  });
+let arr = false;
+export const SetupService = async (background = false) => {
+  if (arr) return;
+  arr = true;
+  console.log('setup service2');
+  await setupPlayer(
+    {
+      autoHandleInterruptions: true,
+    },
+    background
+  );
+  console.log('setup service2');
   await TrackPlayer.updateOptions({
     android: {
       appKilledPlaybackBehavior: DefaultAudioServiceBehaviour,
@@ -43,13 +51,19 @@ export const SetupService = async () => {
       Capability.SkipToNext,
       Capability.SkipToPrevious,
       Capability.SeekTo,
+      Capability.JumpBackward,
     ],
     compactCapabilities: [
       Capability.Play,
       Capability.Pause,
       // Capability.SkipToNext,
     ],
-    notificationCapabilities: [Capability.Play, Capability.Pause],
+    notificationCapabilities: [
+      Capability.Play,
+      Capability.Pause,
+      Capability.SeekTo,
+      Capability.JumpBackward,
+    ],
     progressUpdateEventInterval: 2,
     customActions: {
       customActionsList: [
