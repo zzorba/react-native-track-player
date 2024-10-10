@@ -941,8 +941,14 @@ class MusicService : HeadlessJsMediaService() {
             browser: MediaSession.ControllerInfo,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<MediaItem>> {
+            val rootExtras = Bundle().apply {
+                putBoolean("android.media.browse.CONTENT_STYLE_SUPPORTED", true)
+                putInt("android.media.browse.CONTENT_STYLE_BROWSABLE_HINT", mediaTreeStyle[0])
+                putInt("android.media.browse.CONTENT_STYLE_PLAYABLE_HINT",  mediaTreeStyle[1])
+            }
+            val libraryParams = LibraryParams.Builder().setExtras(rootExtras).build()
             Log.d("APM", "acquiring root: ${browser.packageName}")
-            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, null))
+            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, libraryParams))
         }
 
         override fun onGetChildren(
