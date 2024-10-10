@@ -23,7 +23,9 @@ import javax.inject.Inject
 @UnstableApi
 class CoilBitmapLoader @Inject constructor(
     private val context: Context,
-    private val cropSquare: Boolean = false) : BitmapLoader {
+    private val cropSquare: Boolean = false,
+    private val cacheBitmap: MutableList<Bitmap?> = mutableListOf(null)
+) : BitmapLoader {
 
     private val scope = MainScope()
     private val imageLoader = ImageLoader(context)
@@ -48,9 +50,9 @@ class CoilBitmapLoader @Inject constructor(
         if (Build.MANUFACTURER == "samsung" || cropSquare) {
             imgrequest = imgrequest.transformations(CropSquareTransformation())
         }
-
         val response = imageLoader.execute(imgrequest.build())
         val bitmap = (response.drawable as? BitmapDrawable)?.bitmap
+        cacheBitmap[0] = bitmap
         bitmap ?: throw IOException("Unable to load bitmap: $uri")
     }
 }
