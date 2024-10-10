@@ -1,14 +1,17 @@
 package com.example
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.util.Log
 import android.widget.RemoteViews
-import androidx.annotation.OptIn
 import com.doublesymmetry.trackplayer.model.Track
+import com.doublesymmetry.trackplayer.module.MusicEvents
 import com.doublesymmetry.trackplayer.service.MusicService
+import com.lovegaoshi.kotlinaudio.models.AudioPlayerState
 
 /**
  * Implementation of App Widget functionality.
@@ -16,23 +19,60 @@ import com.doublesymmetry.trackplayer.service.MusicService
 class RNTPAppWidget : AppWidgetProvider() {
 
     private lateinit var binder: MusicService.MusicBinder
+    private var currentTrack: Track? = null
 
-    private fun updateAppWidget(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetId: Int,
-        track: Track,
-        bitmap: Bitmap?
-    ) {
-        // Construct the RemoteViews object
-        val views = RemoteViews(context.packageName, R.layout.rntp_app_widget)
-        views.setTextViewText(R.id.songName, track.title ?: "")
-        views.setTextViewText(R.id.artistName, track.artist ?: "")
+    private fun bindService (context: Context?): Boolean {
+        if (!::binder.isInitialized || !binder.isBinderAlive) {
+            if (context == null) return false
+            Log.d("APM", "widget attempt to connect to MusicService...")
+            val mBinder = peekService(context, Intent(context, MusicService::class.java)) ?: return false
+            Log.d("APM", "widget attempt to cast to MusicService...")
+            binder = mBinder as MusicService.MusicBinder
+            if (!binder.isBinderAlive) return false
+        }
+        return true
+    }
+
+    private fun emit(context: Context?, e: String) {
+        if (!bindService(context)) return
+        binder.service.emit(e)
+    }
+
+    private fun initWidget(views: RemoteViews, context: Context): RemoteViews {
+        views.setOnClickPendingIntent(
+            R.id.buttonPrev, PendingIntent.getBroadcast(
+                context, 0,
+                Intent(context, RNTPAppWidget::class.java).setAction(MusicEvents.BUTTON_SKIP_PREVIOUS),
+                PendingIntent.FLAG_IMMUTABLE))
+        views.setOnClickPendingIntent(
+            R.id.buttonPlay, PendingIntent.getBroadcast(
+                context, 0,
+                Intent(context, RNTPAppWidget::class.java).setAction(MusicEvents.BUTTON_PLAY),
+                PendingIntent.FLAG_IMMUTABLE))
+        views.setOnClickPendingIntent(
+            R.id.buttonNext, PendingIntent.getBroadcast(
+                context, 0,
+                Intent(context, RNTPAppWidget::class.java).setAction(MusicEvents.BUTTON_SKIP_NEXT),
+                PendingIntent.FLAG_IMMUTABLE))
+        views.setTextViewCompoundDrawables(R.id.buttonPlay, R.drawable.media3_icon_pause, 0,0,0)
+        return views
+    }
+
+    private fun updateTrack(views: RemoteViews, track: Track?, bitmap: Bitmap?): RemoteViews {
+        views.setTextViewText(R.id.songName, track?.title ?: "")
+        views.setTextViewText(R.id.artistName, track?.artist ?: "")
         if (bitmap != null) {
             views.setImageViewBitmap(R.id.albumArt, bitmap)
         }
-        // Instruct the widget manager to update the widget
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
+    }
+
+    private fun updatePlayPause(views: RemoteViews) {
+        val isPlaying = binder.service.state === AudioPlayerState.PLAYING
+        views.setTextViewCompoundDrawables(
+            R.id.buttonPlay,
+            if (isPlaying) R.drawable.media3_icon_pause else R.drawable.media3_icon_play,
+            0,0,0)
     }
 
     override fun onUpdate(
@@ -40,16 +80,40 @@ class RNTPAppWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        if (!::binder.isInitialized || !binder.isBinderAlive) {
-            binder = peekService(context, Intent(context, MusicService::class.java)) as MusicService.MusicBinder
-            if (!binder.isBinderAlive) return
-        }
-        val track = binder.service.currentTrack;
-        val bitmap = binder.service.currentBitmap[0]
-        // There may be multiple widgets active, so update all of them
+        if (!bindService(context)) return
+
+
+        // Construct the RemoteViews object
+        val views = RemoteViews(context.packageName, R.layout.rntp_app_widget)
+        initWidget(views, context)
+        updatePlayPause(views)
+        val track = binder.service.currentTrack
+        if (track != currentTrack) {
+            currentTrack = track
+            val bitmap = if (binder.service.currentBitmap.size == 1) binder.service.currentBitmap[0] else null
+            updateTrack(views, currentTrack, bitmap)
+        }State
+        // Instruct the widget manager to update the widget
         for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId, track, bitmap)
+            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
+    }
+
+    override fun onReceive(context: Context?, intent: Intent?) {
+        try {
+            when (intent?.action) {
+                MusicEvents.BUTTON_SKIP_PREVIOUS -> emit(context, MusicEvents.BUTTON_SKIP_PREVIOUS)
+                MusicEvents.BUTTON_SKIP_NEXT -> emit(context, MusicEvents.BUTTON_SKIP_NEXT)
+                MusicEvents.BUTTON_PLAY -> {
+                    emit(context, MusicEvents.BUTTON_PLAY)
+                    binder.service.state
+                }
+                else -> {}
+            }
+        } catch (e: Exception) {
+            Log.w("APM", "widget action ${intent?.action} failed by $e")
+        }
+        super.onReceive(context, intent)
     }
 
     override fun onEnabled(context: Context) {
@@ -59,4 +123,8 @@ class RNTPAppWidget : AppWidgetProvider() {
     override fun onDisabled(context: Context) {
         // Enter relevant functionality for when the last widget is disabled
     }
+
 }
+
+val WIDGET_PLAY = "APM-widget-play"
+val WIDGET_PAUSE = "APM-widget-pause"

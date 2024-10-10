@@ -751,7 +751,7 @@ class MusicService : HeadlessJsMediaService() {
     }
 
     @MainThread
-    private fun emit(event: String, data: Bundle? = null) {
+    fun emit(event: String, data: Bundle? = null) {
         reactNativeHost.reactInstanceManager.currentReactContext
             ?.emitDeviceEvent(event, data?.let { Arguments.fromBundle(it) })
     }
