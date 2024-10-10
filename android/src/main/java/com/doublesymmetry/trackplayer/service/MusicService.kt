@@ -4,6 +4,7 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Binder
 import android.os.Build
@@ -71,6 +72,7 @@ class MusicService : HeadlessJsMediaService() {
     private var sessionCommands: SessionCommands? = null
     private var playerCommands: Player.Commands? = null
     private var customLayout: List<CommandButton> = listOf()
+    var currentBitmap: MutableList<Bitmap?> = mutableListOf(null)
     private var lastWake: Long = 0
 
     @ExperimentalCoroutinesApi
@@ -84,7 +86,7 @@ class MusicService : HeadlessJsMediaService() {
             action = Intent.ACTION_VIEW
         }
         mediaSession = MediaLibrarySession.Builder(this, fakePlayer, APMMediaSessionCallback() )
-            .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
+            .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this, cacheBitmap = currentBitmap)))
             .setId("APM-MediaSession")
             // https://github.com/androidx/media/issues/1218
             .setSessionActivity(PendingIntent.getActivity(this, 0, openAppIntent, getPendingIntentFlags()))
@@ -749,7 +751,7 @@ class MusicService : HeadlessJsMediaService() {
     }
 
     @MainThread
-    private fun emit(event: String, data: Bundle? = null) {
+    fun emit(event: String, data: Bundle? = null) {
         reactNativeHost.reactInstanceManager.currentReactContext
             ?.emitDeviceEvent(event, data?.let { Arguments.fromBundle(it) })
     }

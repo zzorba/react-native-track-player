@@ -1,7 +1,9 @@
-import { Platform } from 'react-native';
-import TrackPlayer, { Event } from 'react-native-track-player';
+import { Platform, NativeModules } from 'react-native';
+import TrackPlayer, { Event, State } from 'react-native-track-player';
 import { SetupService } from './SetupService';
 import { QueueInitialTracksService } from './QueueInitialTracksService';
+
+const { RNTPWidgetModule } = NativeModules;
 
 export async function PlaybackService() {
   (async () => {
@@ -95,6 +97,7 @@ export async function PlaybackService() {
 
   TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, (event) => {
     console.log('Event.PlaybackActiveTrackChanged', event);
+    RNTPWidgetModule?.updateWidget();
   });
 
   TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, (event) => {
@@ -107,6 +110,7 @@ export async function PlaybackService() {
 
   TrackPlayer.addEventListener(Event.PlaybackState, (event) => {
     console.log('Event.PlaybackState', event);
+    RNTPWidgetModule?.updateWidget();
   });
 
   TrackPlayer.addEventListener(Event.PlaybackMetadataReceived, (event) => {
