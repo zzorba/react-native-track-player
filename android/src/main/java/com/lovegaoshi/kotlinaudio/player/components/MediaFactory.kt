@@ -57,7 +57,8 @@ class MediaFactory (
             mediaItem.mediaMetadata.extras?.getSerializable("headers")
         }
         val resourceId = mediaItem.mediaMetadata.extras?.getInt("resource-id")
-        val resourceType = mediaItem.mediaMetadata.extras?.getString("type")
+        // HACK: why are these capitalized?
+        val resourceType = mediaItem.mediaMetadata.extras?.getString("type")?.lowercase()
         val uri = Uri.parse(mediaItem.mediaMetadata.extras?.getString("uri")!!)
         val factory: DataSource.Factory = when {
             resourceId != 0 && resourceId != null -> {
