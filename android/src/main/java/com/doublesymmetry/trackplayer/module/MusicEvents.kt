@@ -21,6 +21,7 @@ class MusicEvents(private val reactContext: ReactContext) : BroadcastReceiver() 
     companion object {
         // Media Control Events
         const val BUTTON_PLAY = "remote-play"
+        const val BUTTON_PLAY_PAUSE = "remote-play-pause"
         const val BUTTON_PLAY_FROM_ID = "remote-play-id"
         const val BUTTON_PLAY_FROM_SEARCH = "remote-play-search"
         const val BUTTON_PAUSE = "remote-pause"

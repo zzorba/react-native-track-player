@@ -24,6 +24,18 @@ export async function PlaybackService() {
     });
   });
 
+  TrackPlayer.addEventListener(Event.RemotePlayPause, async () => {
+    console.log('Event.RemotePlayPause');
+    if ((await TrackPlayer.getPlaybackState()).state === State.Playing) {
+      TrackPlayer.fadeOutPause();
+    } else {
+      TrackPlayer.play();
+      TrackPlayer.setAnimatedVolume({
+        volume: 1,
+      });
+    }
+  });
+
   TrackPlayer.addEventListener(Event.RemoteNext, () => {
     console.log('Event.RemoteNext');
     TrackPlayer.fadeOutNext();

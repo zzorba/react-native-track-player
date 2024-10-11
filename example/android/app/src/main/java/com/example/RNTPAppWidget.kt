@@ -47,14 +47,13 @@ class RNTPAppWidget : AppWidgetProvider() {
         views.setOnClickPendingIntent(
             R.id.buttonPlay, PendingIntent.getBroadcast(
                 context, 0,
-                Intent(context, RNTPAppWidget::class.java).setAction(MusicEvents.BUTTON_PLAY),
+                Intent(context, RNTPAppWidget::class.java).setAction(MusicEvents.BUTTON_PLAY_PAUSE),
                 PendingIntent.FLAG_IMMUTABLE))
         views.setOnClickPendingIntent(
             R.id.buttonNext, PendingIntent.getBroadcast(
                 context, 0,
                 Intent(context, RNTPAppWidget::class.java).setAction(MusicEvents.BUTTON_SKIP_NEXT),
                 PendingIntent.FLAG_IMMUTABLE))
-        views.setTextViewCompoundDrawables(R.id.buttonPlay, R.drawable.media3_icon_pause, 0,0,0)
         return views
     }
 
@@ -92,7 +91,7 @@ class RNTPAppWidget : AppWidgetProvider() {
             currentTrack = track
             val bitmap = if (binder.service.currentBitmap.size == 1) binder.service.currentBitmap[0] else null
             updateTrack(views, currentTrack, bitmap)
-        }State
+        }
         // Instruct the widget manager to update the widget
         for (appWidgetId in appWidgetIds) {
             appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -104,10 +103,7 @@ class RNTPAppWidget : AppWidgetProvider() {
             when (intent?.action) {
                 MusicEvents.BUTTON_SKIP_PREVIOUS -> emit(context, MusicEvents.BUTTON_SKIP_PREVIOUS)
                 MusicEvents.BUTTON_SKIP_NEXT -> emit(context, MusicEvents.BUTTON_SKIP_NEXT)
-                MusicEvents.BUTTON_PLAY -> {
-                    emit(context, MusicEvents.BUTTON_PLAY)
-                    binder.service.state
-                }
+                MusicEvents.BUTTON_PLAY_PAUSE -> emit(context, MusicEvents.BUTTON_PLAY_PAUSE)
                 else -> {}
             }
         } catch (e: Exception) {

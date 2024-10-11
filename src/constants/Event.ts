@@ -47,6 +47,10 @@ export enum Event {
    **/
   RemotePlay = 'remote-play',
   /**
+   * Fired when the user presses the play/pause button.
+   **/
+  RemotePlayPause = 'remote-play-pause',
+  /**
    * Fired when the user presses the pause button.
    * See https://rntp.dev/docs/api/events#remotepause
    **/

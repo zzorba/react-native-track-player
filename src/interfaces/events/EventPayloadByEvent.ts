@@ -35,6 +35,7 @@ export type EventPayloadByEvent = {
   [Event.PlaybackPlayWhenReadyChanged]: PlaybackPlayWhenReadyChangedEvent;
   [Event.PlaybackProgressUpdated]: PlaybackProgressUpdatedEvent;
   [Event.RemotePlay]: never;
+  [Event.RemotePlayPause]: never;
   [Event.RemotePlayId]: RemotePlayIdEvent;
   [Event.RemotePlaySearch]: RemotePlaySearchEvent;
   [Event.RemotePause]: never;
