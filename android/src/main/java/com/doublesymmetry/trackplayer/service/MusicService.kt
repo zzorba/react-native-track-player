@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
+import android.view.KeyEvent
 import androidx.annotation.MainThread
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
@@ -1026,6 +1027,35 @@ class MusicService : HeadlessJsMediaService() {
             intent: Intent
         ): Boolean {
             Log.d("APM", "onMediaBtn: ${controllerInfo.packageName}, $intent")
+            val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            } else {
+                intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+            }
+
+            if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
+                when (keyEvent.keyCode) {
+                    KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                        skipToNext()
+                        return true
+                    }
+                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                        skipToPrevious()
+                        return true
+                    }
+                    KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD, KeyEvent.KEYCODE_MEDIA_STEP_FORWARD -> {
+                        // HACK: is this properly implemented?
+                        player.player.seekForward()
+                        return true
+                    }
+                    KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD, KeyEvent.KEYCODE_MEDIA_STEP_BACKWARD -> {
+                        player.player.seekBack()
+                        return true
+                    }
+                    else -> {
+                    }
+                }
+            }
             return super.onMediaButtonEvent(session, controllerInfo, intent)
         }
 
