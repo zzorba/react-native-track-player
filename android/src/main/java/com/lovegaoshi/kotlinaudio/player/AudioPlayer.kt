@@ -173,6 +173,36 @@ abstract class AudioPlayer internal constructor(
 
         player = object : ForwardingPlayer(exoPlayer) {
 
+
+            override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
+                Log.d("APM", "override setMediaItem handling to RNTP")
+                return
+            }
+
+            override fun addMediaItems(mediaItems: MutableList<MediaItem>) {
+                Log.d("APM", "override setMediaItem handling to RNTP2")
+                return
+                super.addMediaItems(mediaItems)
+            }
+
+            override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {
+                Log.d("APM", "override setMediaItem handling to RNTP3")
+                return
+            }
+
+            override fun setMediaItems(
+                mediaItems: MutableList<MediaItem>,
+                startIndex: Int,
+                startPositionMs: Long
+            ) {
+                Log.d("APM", "override setMediaItem handling to RNTP4")
+                return
+            }
+
+            override fun setMediaItems(mediaItems: MutableList<MediaItem>) {
+                Log.d("APM", "override setMediaItem handling to RNTP5")
+                return
+            }
             override fun isCommandAvailable(command: Int): Boolean {
                 if (options.alwaysShowNext) {
                     return when (command) {
