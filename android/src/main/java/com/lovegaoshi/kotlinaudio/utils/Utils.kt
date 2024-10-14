@@ -62,16 +62,20 @@ fun getAPMCacheBitmapUri(contentResolver: ContentResolver, contentValues: Conten
     return contentResolver.insert(contentUri, contentValues)
 }
 
-fun getEmbeddedBitmap(path: String?): Bitmap? {
+fun getEmbeddedBitmapArray(path: String?): ByteArray? {
     if (path == null) return null
     val mmr = MediaMetadataRetriever()
     try {
         mmr.setDataSource(path)
-        val artworkData = mmr.embeddedPicture ?: return null
-        return BitmapFactory.decodeByteArray(artworkData, 0, artworkData.size)
+        return mmr.embeddedPicture
     } catch (e: Exception) {
         return null
     }
+}
+
+fun getEmbeddedBitmap(path: String?): Bitmap? {
+    val artworkData = getEmbeddedBitmapArray(path)
+    return if (artworkData == null) null else BitmapFactory.decodeByteArray(artworkData, 0, artworkData.size)
 }
 
 var cacheKeyG = ""

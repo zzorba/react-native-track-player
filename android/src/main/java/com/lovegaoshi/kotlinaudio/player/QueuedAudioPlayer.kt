@@ -38,7 +38,7 @@ class QueuedAudioPlayer(
         get() = exoPlayer.currentMediaItemIndex
 
     override val currentItem: AudioItem?
-        get() = MediaItem2AudioItem(queue.getOrNull(currentIndex))
+        get() = mediaItem2AudioItem(queue.getOrNull(currentIndex))
 
     val nextIndex: Int?
         get() {
@@ -53,14 +53,14 @@ class QueuedAudioPlayer(
         }
 
     val items: List<AudioItem>
-        get() = queue.map { MediaItem2AudioItem(it)!! }
+        get() = queue.map { mediaItem2AudioItem(it)!! }
 
     val previousItems: List<AudioItem>
         get() {
             return if (queue.isEmpty()) emptyList()
             else queue
                 .subList(0, exoPlayer.currentMediaItemIndex)
-                .map { MediaItem2AudioItem(it)!! }
+                .map { mediaItem2AudioItem(it)!! }
         }
 
     val nextItems: List<AudioItem>
@@ -68,7 +68,7 @@ class QueuedAudioPlayer(
             return if (queue.isEmpty()) emptyList()
             else queue
                 .subList(exoPlayer.currentMediaItemIndex, queue.lastIndex)
-                .map { MediaItem2AudioItem(it)!! }
+                .map { mediaItem2AudioItem(it)!! }
         }
 
     val nextItem: AudioItem?
@@ -86,7 +86,7 @@ class QueuedAudioPlayer(
         if (queue.isEmpty()) {
             add(item)
         } else {
-            exoPlayer.addMediaItem(currentIndex + 1, AudioItem2MediaItem(item))
+            exoPlayer.addMediaItem(currentIndex + 1, audioItem2MediaItem(item))
             exoPlayer.removeMediaItem(currentIndex)
             exoPlayer.seekTo(currentIndex, C.TIME_UNSET);
             exoPlayer.prepare()
@@ -108,7 +108,7 @@ class QueuedAudioPlayer(
      * @param playWhenReady Whether playback starts automatically.
      */
     fun add(item: AudioItem) {
-        val mediaSource = AudioItem2MediaItem(item)
+        val mediaSource = audioItem2MediaItem(item)
         queue.add(mediaSource)
         exoPlayer.addMediaItem(mediaSource)
         exoPlayer.prepare()
@@ -129,7 +129,7 @@ class QueuedAudioPlayer(
      * @param items The [AudioItem]s to add.
      */
     fun add(items: List<AudioItem>) {
-        val mediaSources = items.map { AudioItem2MediaItem(it) }
+        val mediaSources = items.map { audioItem2MediaItem(it) }
         queue.addAll(mediaSources)
         exoPlayer.addMediaItems(mediaSources)
         exoPlayer.prepare()
@@ -142,7 +142,7 @@ class QueuedAudioPlayer(
      * @param atIndex  Index to insert items at, if no items loaded this will not automatically start playback.
      */
     fun add(items: List<AudioItem>, atIndex: Int) {
-        val mediaSources = items.map { AudioItem2MediaItem(it) }
+        val mediaSources = items.map { audioItem2MediaItem(it) }
         queue.addAll(atIndex, mediaSources)
         exoPlayer.addMediaItems(atIndex, mediaSources)
         exoPlayer.prepare()
@@ -229,7 +229,7 @@ class QueuedAudioPlayer(
      * If updating current index, we update the notification metadata if [automaticallyUpdateNotificationMetadata] is true.
      */
     fun replaceItem(index: Int, item: AudioItem) {
-        val mediaSource = AudioItem2MediaItem(item)
+        val mediaSource = audioItem2MediaItem(item)
         queue[index] = mediaSource
         exoPlayer.replaceMediaItem(index, mediaSource)
     }

@@ -325,14 +325,16 @@ class MusicService : HeadlessJsMediaService() {
         sessionCommands = sessionCommandsBuilder.build()
         playerCommands = playerCommandsBuilder.build()
 
-        mediaSession.connectedControllers.forEach { controller ->
-            mediaSession.setCustomLayout(controller, customLayout)
-            mediaSession.setAvailableCommands(
-                controller,
-                sessionCommands!!,
-                playerCommands!!
-            )
-        }
+        // https://github.com/androidx/media/blob/c35a9d62baec57118ea898e271ac66819399649b/demos/session_service/src/main/java/androidx/media3/demo/session/DemoMediaLibrarySessionCallback.kt#L107
+        mediaSession.setCustomLayout(
+            mediaSession.mediaNotificationControllerInfo!!,
+            customLayout
+        )
+        mediaSession.setAvailableCommands(
+            mediaSession.mediaNotificationControllerInfo!!,
+            sessionCommands!!,
+            playerCommands!!
+        )
     }
 
     @MainThread
@@ -910,7 +912,9 @@ class MusicService : HeadlessJsMediaService() {
 
             if (controller.packageName in arrayOf(
                     "com.android.systemui",
+                    // https://github.com/googlesamples/android-media-controller
                     "com.example.android.mediacontroller",
+                    // Android Auto
                     "com.google.android.projection.gearhead"
                 )) {
                 // HACK: attempt to wake up activity (for legacy APM). if not, start headless.
@@ -1026,30 +1030,29 @@ class MusicService : HeadlessJsMediaService() {
             controllerInfo: MediaSession.ControllerInfo,
             intent: Intent
         ): Boolean {
-            Log.d("APM", "onMediaBtn: ${controllerInfo.packageName}, $intent")
             val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
             } else {
                 intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
             }
+            Log.d("APM", "onMediaBtn: ${controllerInfo.packageName}, $intent, $keyEvent")
 
             if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
                 when (keyEvent.keyCode) {
                     KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                        skipToNext()
+                        emit(MusicEvents.BUTTON_SKIP_NEXT)
                         return true
                     }
                     KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                        skipToPrevious()
+                        emit(MusicEvents.BUTTON_SKIP_PREVIOUS)
                         return true
                     }
                     KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD, KeyEvent.KEYCODE_MEDIA_STEP_FORWARD -> {
-                        // HACK: is this properly implemented?
-                        player.player.seekForward()
+                        emit(MusicEvents.BUTTON_JUMP_FORWARD)
                         return true
                     }
                     KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD, KeyEvent.KEYCODE_MEDIA_STEP_BACKWARD -> {
-                        player.player.seekBack()
+                        emit(MusicEvents.BUTTON_JUMP_BACKWARD)
                         return true
                     }
                     else -> {

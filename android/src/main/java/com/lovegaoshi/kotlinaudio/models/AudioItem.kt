@@ -1,10 +1,10 @@
 package com.lovegaoshi.kotlinaudio.models
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import com.lovegaoshi.kotlinaudio.utils.getEmbeddedBitmapArray
 import java.util.UUID
 
 interface AudioItem {
@@ -47,57 +47,35 @@ enum class MediaType(val value: String) {
     SMOOTH_STREAMING("smoothstreaming");
 }
 
-data class DefaultAudioItem(
-    override var audioUrl: String,
 
-    /**
-     * Set to [MediaType.DEFAULT] by default.
-     */
-    override val type: MediaType = MediaType.DEFAULT,
 
-    override var artist: String? = null,
-    override var title: String? = null,
-    override var albumTitle: String? = null,
-    override var artwork: String? = null,
-    override val duration: Long? = null,
-    override val options: AudioItemOptions? = null,
-    override val mediaId: String? = null,
-) : AudioItem
-
-class AudioItemHolder(
-    var audioItem: AudioItem
-) {
-    var artworkBitmap: Bitmap? = null
-}
-
-fun AudioItem2MediaItem(audioItem: AudioItem): MediaItem {
+fun audioItem2MediaItem(audioItem: AudioItem): MediaItem {
     return MediaItem.Builder()
         .setMediaId(audioItem.mediaId ?: UUID.randomUUID().toString())
         .setUri(audioItem.audioUrl)
         .setMediaMetadata(
             MediaMetadata.Builder()
-                .setTitle(audioItem.title)
-                .setArtist(audioItem.artist)
-                .setArtworkUri(Uri.parse(audioItem.artwork))
-                .setExtras(Bundle().apply {
-                    audioItem.options?.headers?.let {
-                        putSerializable("headers", audioItem.options!!.headers)
-                    }
-                    audioItem.options?.userAgent?.let {
-                        putString("user-agent", it)
-                    }
-                    audioItem.options?.resourceId?.let {
-                        putInt("resource-id", it)
-                    }
-                    putString("type", audioItem.type.toString())
-                    putString("uri", audioItem.audioUrl)
-                })
-                .build()
-        )
+            .setTitle(audioItem.title)
+            .setArtist(audioItem.artist)
+            .setArtworkUri(Uri.parse(audioItem.artwork))
+            .setArtworkData(if (audioItem.artwork?.startsWith("file://") == true) getEmbeddedBitmapArray(audioItem.artwork) else null, MediaMetadata.PICTURE_TYPE_MEDIA)
+            .setExtras(Bundle().apply {
+                audioItem.options?.headers?.let {
+                    putSerializable("headers", audioItem.options!!.headers)
+                }
+                audioItem.options?.userAgent?.let {
+                    putString("user-agent", it)
+                }
+                audioItem.options?.resourceId?.let {
+                    putInt("resource-id", it)
+                }
+                putString("type", audioItem.type.toString())
+                putString("uri", audioItem.audioUrl)
+            }).build())
         .setTag(audioItem)
         .build()
 }
 
-fun MediaItem2AudioItem(item: MediaItem?): AudioItem? {
+fun mediaItem2AudioItem(item: MediaItem?): AudioItem? {
     return item?.localConfiguration?.tag as AudioItem?
 }

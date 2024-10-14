@@ -19,10 +19,10 @@ import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
 import com.lovegaoshi.kotlinaudio.event.PlayerEventHolder
 import com.lovegaoshi.kotlinaudio.models.AudioItem
-import com.lovegaoshi.kotlinaudio.models.AudioItem2MediaItem
+import com.lovegaoshi.kotlinaudio.models.audioItem2MediaItem
 import com.lovegaoshi.kotlinaudio.models.AudioItemTransitionReason
 import com.lovegaoshi.kotlinaudio.models.AudioPlayerState
-import com.lovegaoshi.kotlinaudio.models.MediaItem2AudioItem
+import com.lovegaoshi.kotlinaudio.models.mediaItem2AudioItem
 import com.lovegaoshi.kotlinaudio.models.MediaSessionCallback
 import com.lovegaoshi.kotlinaudio.models.PlayWhenReadyChangeData
 import com.lovegaoshi.kotlinaudio.models.PlaybackError
@@ -59,7 +59,7 @@ abstract class AudioPlayer internal constructor(
         set(v) { focusManager.alwaysPauseOnInterruption = v }
 
     open val currentItem: AudioItem?
-        get() = MediaItem2AudioItem(exoPlayer.currentMediaItem)
+        get() = mediaItem2AudioItem(exoPlayer.currentMediaItem)
 
     var playbackError: PlaybackError? = null
     var playerState: AudioPlayerState = AudioPlayerState.IDLE
@@ -298,7 +298,7 @@ abstract class AudioPlayer internal constructor(
      * @param item The [AudioItem] to replace the current one.
      */
     open fun load(item: AudioItem) {
-        exoPlayer.addMediaItem(AudioItem2MediaItem(item))
+        exoPlayer.addMediaItem(audioItem2MediaItem(item))
         exoPlayer.prepare()
     }
 
