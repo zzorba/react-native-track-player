@@ -1,11 +1,36 @@
 package com.lovegaoshi.kotlinaudio.models
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.lovegaoshi.kotlinaudio.utils.getEmbeddedBitmapArray
 import java.util.UUID
+
+
+data class DefaultAudioItem(
+    override var audioUrl: String,
+
+    /**
+     * Set to [MediaType.DEFAULT] by default.
+     */
+    override val type: MediaType = MediaType.DEFAULT,
+
+    override var artist: String? = null,
+    override var title: String? = null,
+    override var albumTitle: String? = null,
+    override var artwork: String? = null,
+    override val duration: Long? = null,
+    override val options: AudioItemOptions? = null,
+    override val mediaId: String? = null,
+) : AudioItem
+
+class AudioItemHolder(
+    var audioItem: AudioItem
+) {
+    var artworkBitmap: Bitmap? = null
+}
 
 interface AudioItem {
     var audioUrl: String

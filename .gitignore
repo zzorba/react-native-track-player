@@ -19,6 +19,7 @@ android/local.properties
 android/*.iml
 android/gradlew
 android/gradlew.bat
+.gradle/
 
 # Windows
 

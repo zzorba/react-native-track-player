@@ -313,7 +313,7 @@ class MusicService : HeadlessJsMediaService() {
                 this,
                 customActions,
                 v,
-                TrackPlayerR.drawable.media3_icon_check_circle_unfilled
+                TrackPlayerR.drawable.ifl_24px
             )
         ).commandButton
         } ?: ImmutableList.of()

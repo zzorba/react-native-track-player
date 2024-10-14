@@ -31,7 +31,7 @@ class MusicService : MediaLibraryService() {
 
         player = QueuedAudioPlayer(this)
         mediaSession = MediaLibrarySession
-            .Builder(this, player.player, CustomMediaSessionCallback(customActions))
+            .Builder(this, player.exoPlayer, CustomMediaSessionCallback(customActions))
             .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
             .setId("APM")
             .build()
