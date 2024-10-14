@@ -231,7 +231,7 @@ class MusicService : HeadlessJsMediaService() {
 
         appKilledPlaybackBehavior =
             AppKilledPlaybackBehavior::string.find(androidOptions?.getString(APP_KILLED_PLAYBACK_BEHAVIOR_KEY)) ?:
-            AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
+                    AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
 
         BundleUtils.getIntOrNull(androidOptions, STOP_FOREGROUND_GRACE_PERIOD_KEY)?.let { stopForegroundGracePeriod = it }
 
@@ -318,7 +318,7 @@ class MusicService : HeadlessJsMediaService() {
 
         val sessionCommandsBuilder = SessionCommands.Builder()
         customLayout.forEach {
-            v ->
+                v ->
             v.sessionCommand?.let { sessionCommandsBuilder.add(it) }
         }
 
@@ -866,10 +866,10 @@ class MusicService : HeadlessJsMediaService() {
 
     fun notifyChildrenChanged() {
         mediaSession.connectedControllers.forEach {
-            controller ->
-                mediaTree.forEach {
-                        it -> mediaSession.notifyChildrenChanged(controller, it.key, it.value.size, null)
-                }
+                controller ->
+            mediaTree.forEach {
+                    it -> mediaSession.notifyChildrenChanged(controller, it.key, it.value.size, null)
+            }
 
         }
     }
@@ -900,7 +900,8 @@ class MusicService : HeadlessJsMediaService() {
         // HACK: I'm sure most of the callbacks were not implemented correctly.
         // ATM I only care that andorid auto still functions.
 
-        private val rootItem = buildMediaItem(title = "root", mediaId = "/", isPlayable = false)
+        private val rootItem = buildMediaItem(title = "root", mediaId = AA_ROOT_KEY, isPlayable = false)
+        private val forYouItem = buildMediaItem(title = "For You", mediaId = AA_FOR_YOU_KEY, isPlayable = false)
 
         // Configure commands available to the controller in onConnect()
         @OptIn(UnstableApi::class)
@@ -955,7 +956,14 @@ class MusicService : HeadlessJsMediaService() {
             }
             val libraryParams = LibraryParams.Builder().setExtras(rootExtras).build()
             Log.d("APM", "acquiring root: ${browser.packageName}")
-            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, libraryParams))
+            // https://github.com/androidx/media/issues/1731#issuecomment-2411109462
+            val mRootItem = when (browser.packageName) {
+                "com.google.android.googlequicksearchbox" -> {
+                    if (mediaTree[AA_FOR_YOU_KEY] == null) rootItem else forYouItem
+                }
+                else -> rootItem
+            }
+            return Futures.immediateFuture(LibraryResult.ofItem(mRootItem, libraryParams))
         }
 
         override fun onGetChildren(
@@ -1133,7 +1141,11 @@ class MusicService : HeadlessJsMediaService() {
         const val IS_FOCUS_LOSS_PERMANENT_KEY = "permanent"
         const val IS_PAUSED_KEY = "paused"
 
+        const val AA_FOR_YOU_KEY = "for-you"
+        const val AA_ROOT_KEY = "/"
+
         const val DEFAULT_JUMP_INTERVAL = 15.0
         const val DEFAULT_STOP_FOREGROUND_GRACE_PERIOD = 5
     }
 }
+
