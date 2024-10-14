@@ -20,4 +20,9 @@ export interface AndroidOptions {
    * Defaults to 5 seconds.
    */
   stopForegroundGracePeriod?: number;
+
+  /**
+   * https://developer.android.com/media/media3/exoplayer/track-selection#audioOffload
+   */
+  audioOffload?: number;
 }

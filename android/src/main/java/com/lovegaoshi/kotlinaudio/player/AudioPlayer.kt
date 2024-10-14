@@ -14,6 +14,7 @@ import androidx.media3.common.Metadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Player.Listener
+import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
@@ -147,6 +148,22 @@ abstract class AudioPlayer internal constructor(
         get() = exoPlayer.isPlaying
 
     private var wasDucking = false
+
+    fun setAudioOffload(offload: Boolean = true) {
+        val audioOffloadPreferences =
+            TrackSelectionParameters.AudioOffloadPreferences.Builder()
+                .setAudioOffloadMode(
+                    if (offload) TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED
+                    else TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED)
+                // Add additional options as needed
+                .setIsGaplessSupportRequired(true)
+                .build()
+        exoPlayer.trackSelectionParameters =
+            exoPlayer.trackSelectionParameters
+                .buildUpon()
+                .setAudioOffloadPreferences(audioOffloadPreferences)
+                .build()
+    }
 
     init {
 

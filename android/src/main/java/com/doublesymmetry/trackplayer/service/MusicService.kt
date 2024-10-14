@@ -215,9 +215,7 @@ class MusicService : HeadlessJsMediaService() {
                 playerOptions?.getDouble(PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt(),
                 playerOptions?.getDouble(BACK_BUFFER_KEY)?.toMilliseconds()?.toInt(),
             )
-
         )
-
         player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
         fakePlayer.release()
         mediaSession.player = player.player
@@ -228,6 +226,10 @@ class MusicService : HeadlessJsMediaService() {
     fun updateOptions(options: Bundle) {
         latestOptions = options
         val androidOptions = options.getBundle(ANDROID_OPTIONS_KEY)
+
+        if (androidOptions?.containsKey(AUDIO_OFFLOAD_KEY) == true) {
+            player.setAudioOffload(androidOptions.getBoolean(AUDIO_OFFLOAD_KEY))
+        }
 
         appKilledPlaybackBehavior =
             AppKilledPlaybackBehavior::string.find(androidOptions?.getString(APP_KILLED_PLAYBACK_BEHAVIOR_KEY)) ?:
@@ -1133,6 +1135,7 @@ class MusicService : HeadlessJsMediaService() {
 
         const val STOPPING_APP_PAUSES_PLAYBACK_KEY = "stoppingAppPausesPlayback"
         const val APP_KILLED_PLAYBACK_BEHAVIOR_KEY = "appKilledPlaybackBehavior"
+        const val AUDIO_OFFLOAD_KEY = "audioOffload"
         const val STOP_FOREGROUND_GRACE_PERIOD_KEY = "stopForegroundGracePeriod"
         const val PAUSE_ON_INTERRUPTION_KEY = "alwaysPauseOnInterruption"
         const val AUTO_UPDATE_METADATA = "autoUpdateMetadata"
