@@ -274,6 +274,7 @@ class MusicService : HeadlessJsMediaService() {
             Player.COMMAND_GET_DEVICE_VOLUME,
             Player.COMMAND_GET_TEXT,
             Player.COMMAND_SEEK_TO_MEDIA_ITEM,
+            Player.COMMAND_SET_MEDIA_ITEM,
             Player.COMMAND_PREPARE,
             Player.COMMAND_RELEASE,
         )
@@ -318,7 +319,7 @@ class MusicService : HeadlessJsMediaService() {
         ).commandButton
         } ?: ImmutableList.of()
 
-        val sessionCommandsBuilder = SessionCommands.Builder()
+        val sessionCommandsBuilder = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
         customLayout.forEach {
                 v ->
             v.sessionCommand?.let { sessionCommandsBuilder.add(it) }
@@ -925,10 +926,14 @@ class MusicService : HeadlessJsMediaService() {
                     onStartCommand(null, 0, 0)
                 }
             }
-            return if (session.isMediaNotificationController(controller)) {
+            return if (
+                session.isMediaNotificationController(controller) ||
+                session.isAutomotiveController(controller) ||
+                session.isAutoCompanionController(controller)
+            ) {
                 MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                     .setCustomLayout(customLayout)
-                    .setAvailableSessionCommands(sessionCommands ?: MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS)
+                    .setAvailableSessionCommands(sessionCommands ?: MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS)
                     .setAvailablePlayerCommands(playerCommands ?: MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
                     .build()
             } else {
