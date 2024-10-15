@@ -22,6 +22,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.LibraryResult
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.BitmapLoader
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
@@ -74,6 +75,10 @@ class MusicService : HeadlessJsMediaService() {
     private var playerCommands: Player.Commands? = null
     private var customLayout: List<CommandButton> = listOf()
     private var lastWake: Long = 0
+
+    fun getBitmapLoader(): BitmapLoader {
+        return mediaSession.bitmapLoader
+    }
 
     fun getCurrentBitmap(): ListenableFuture<Bitmap>? {
         return player.exoPlayer.currentMediaItem?.mediaMetadata?.let {
