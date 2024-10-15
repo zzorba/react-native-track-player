@@ -7,10 +7,9 @@ import android.os.Bundle
 import android.os.IBinder
 import android.net.Uri
 import android.support.v4.media.RatingCompat
-import android.util.Log
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media.utils.MediaConstants
+import androidx.media3.common.MediaMetadata
 import com.lovegaoshi.kotlinaudio.models.Capability
 import com.lovegaoshi.kotlinaudio.models.RepeatMode
 import com.doublesymmetry.trackplayer.model.State
@@ -144,7 +143,8 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             imageUri = if (iconUri != null) Uri.parse(iconUri) else null,
             artist = hashmap["subtitle"],
             subtitle = hashmap["subtitle"],
-            sourceUri = if (mediaUri != null) Uri.parse(mediaUri) else null
+            sourceUri = if (mediaUri != null) Uri.parse(mediaUri) else null,
+            extras = extras
         )
     }
 
