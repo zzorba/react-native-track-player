@@ -24,5 +24,5 @@ export interface AndroidOptions {
   /**
    * https://developer.android.com/media/media3/exoplayer/track-selection#audioOffload
    */
-  audioOffload?: number;
+  audioOffload?: boolean;
 }
