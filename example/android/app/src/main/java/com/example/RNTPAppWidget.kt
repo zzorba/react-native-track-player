@@ -89,7 +89,7 @@ class RNTPAppWidget : AppWidgetProvider() {
         val track = binder.service.currentTrack
         if (track != currentTrack) {
             currentTrack = track
-            val bitmap = if (binder.service.currentBitmap.size == 1) binder.service.currentBitmap[0] else null
+            val bitmap = null
             updateTrack(views, currentTrack, bitmap)
         }
         // Instruct the widget manager to update the widget

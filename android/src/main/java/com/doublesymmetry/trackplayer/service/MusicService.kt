@@ -73,8 +73,15 @@ class MusicService : HeadlessJsMediaService() {
     private var sessionCommands: SessionCommands? = null
     private var playerCommands: Player.Commands? = null
     private var customLayout: List<CommandButton> = listOf()
-    var currentBitmap: MutableList<Bitmap?> = mutableListOf(null)
     private var lastWake: Long = 0
+
+    fun getCurrentBitmap(): ListenableFuture<Bitmap>? {
+        return player.exoPlayer.currentMediaItem?.mediaMetadata?.let {
+            mediaSession.bitmapLoader.loadBitmapFromMetadata(
+                it
+            )
+        }
+    }
 
     @ExperimentalCoroutinesApi
     override fun onCreate() {
@@ -87,7 +94,7 @@ class MusicService : HeadlessJsMediaService() {
             action = Intent.ACTION_VIEW
         }
         mediaSession = MediaLibrarySession.Builder(this, fakePlayer, APMMediaSessionCallback() )
-            .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this, cacheBitmap = currentBitmap)))
+            .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
             .setId("APM-MediaSession")
             // https://github.com/androidx/media/issues/1218
             .setSessionActivity(PendingIntent.getActivity(this, 0, openAppIntent, getPendingIntentFlags()))

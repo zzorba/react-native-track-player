@@ -157,6 +157,7 @@ abstract class AudioPlayer internal constructor(
                     else TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED)
                 // Add additional options as needed
                 .setIsGaplessSupportRequired(true)
+                .setIsSpeedChangeSupportRequired(true)
                 .build()
         exoPlayer.trackSelectionParameters =
             exoPlayer.trackSelectionParameters

@@ -26,7 +26,6 @@ import javax.inject.Inject
 class CoilBitmapLoader @Inject constructor(
     private val context: Context,
     private val cropSquare: Boolean = false,
-    private val cacheBitmap: MutableList<Bitmap?> = mutableListOf(null)
 ) : BitmapLoader {
 
     private val scope = MainScope()
@@ -62,7 +61,6 @@ class CoilBitmapLoader @Inject constructor(
             bitmap = (response.drawable as? BitmapDrawable)?.bitmap
 
         }
-        cacheBitmap[0] = bitmap
         bitmap ?: throw IOException("Unable to load bitmap: $uri")
 
     }
