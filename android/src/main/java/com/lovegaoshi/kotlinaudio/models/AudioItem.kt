@@ -83,7 +83,8 @@ fun audioItem2MediaItem(audioItem: AudioItem): MediaItem {
             .setTitle(audioItem.title)
             .setArtist(audioItem.artist)
             .setArtworkUri(Uri.parse(audioItem.artwork))
-            .setArtworkData(if (audioItem.artwork?.startsWith("file://") == true) getEmbeddedBitmapArray(audioItem.artwork) else null, MediaMetadata.PICTURE_TYPE_MEDIA)
+            .setArtworkData(if (audioItem.artwork?.startsWith("file://") == true) getEmbeddedBitmapArray(
+                audioItem.artwork!!.substring(7)) else null, MediaMetadata.PICTURE_TYPE_MEDIA)
             .setExtras(Bundle().apply {
                 audioItem.options?.headers?.let {
                     putSerializable("headers", audioItem.options!!.headers)

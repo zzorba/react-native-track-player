@@ -328,16 +328,18 @@ class MusicService : HeadlessJsMediaService() {
         sessionCommands = sessionCommandsBuilder.build()
         playerCommands = playerCommandsBuilder.build()
 
-        // https://github.com/androidx/media/blob/c35a9d62baec57118ea898e271ac66819399649b/demos/session_service/src/main/java/androidx/media3/demo/session/DemoMediaLibrarySessionCallback.kt#L107
-        mediaSession.setCustomLayout(
-            mediaSession.mediaNotificationControllerInfo!!,
-            customLayout
-        )
-        mediaSession.setAvailableCommands(
-            mediaSession.mediaNotificationControllerInfo!!,
-            sessionCommands!!,
-            playerCommands!!
-        )
+        if (mediaSession.mediaNotificationControllerInfo != null) {
+            // https://github.com/androidx/media/blob/c35a9d62baec57118ea898e271ac66819399649b/demos/session_service/src/main/java/androidx/media3/demo/session/DemoMediaLibrarySessionCallback.kt#L107
+            mediaSession.setCustomLayout(
+                mediaSession.mediaNotificationControllerInfo!!,
+                customLayout
+            )
+            mediaSession.setAvailableCommands(
+                mediaSession.mediaNotificationControllerInfo!!,
+                sessionCommands!!,
+                playerCommands!!
+            )
+        }
     }
 
     @MainThread
