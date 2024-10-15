@@ -178,6 +178,8 @@ abstract class AudioPlayer internal constructor(
             .apply {
                 setLoadControl(setupBuffer(options.bufferOptions))
             }
+            .setSkipSilenceEnabled(options.skipSilence)
+            .setName("APM-Player1")
             .build()
 
         val audioAttributes = AudioAttributes.Builder()
@@ -185,6 +187,7 @@ abstract class AudioPlayer internal constructor(
             .setContentType(setContentType(options.audioContentType))
             .build();
         exoPlayer.setAudioAttributes(audioAttributes, options.handleAudioFocus);
+
         exoPlayer.addListener(playerListener)
         playerEventHolder.updateAudioPlayerState(AudioPlayerState.IDLE)
 

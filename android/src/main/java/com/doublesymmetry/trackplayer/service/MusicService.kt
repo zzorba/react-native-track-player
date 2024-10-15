@@ -195,8 +195,7 @@ class MusicService : HeadlessJsMediaService() {
             print("Player was initialized. Prevent re-initializing again")
             return
         }
-
-        Log.d("APM", "RNTP musicservice set up.")
+        Log.d("APM", "RNTP musicservice set up")
         val mPlayerOptions = PlayerOptions(
             cacheSize = playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong() ?: 0,
             audioContentType = when(playerOptions?.getString(ANDROID_AUDIO_CONTENT_TYPE)) {
@@ -207,14 +206,19 @@ class MusicService : HeadlessJsMediaService() {
                 "unknown" -> 4
                 else -> 0
             },
+            wakeMode = playerOptions?.getInt(WAKE_MODE, 0) ?: 0,
+            handleAudioBecomingNoisy = playerOptions?.getBoolean(HANDLE_NOISY, true) ?: true,
+            alwaysShowNext = playerOptions?.getBoolean(ALWAYS_SHOW_NEXT, true) ?: true,
             handleAudioFocus = playerOptions?.getBoolean(AUTO_HANDLE_INTERRUPTIONS) ?: true,
-            handleAudioBecomingNoisy = true,
+
             bufferOptions = BufferOptions(
                 playerOptions?.getDouble(MIN_BUFFER_KEY)?.toMilliseconds()?.toInt(),
                 playerOptions?.getDouble(MAX_BUFFER_KEY)?.toMilliseconds()?.toInt(),
                 playerOptions?.getDouble(PLAY_BUFFER_KEY)?.toMilliseconds()?.toInt(),
                 playerOptions?.getDouble(BACK_BUFFER_KEY)?.toMilliseconds()?.toInt(),
-            )
+            ),
+
+            skipSilence = playerOptions?.getBoolean(SKIP_SILENCE) ?: false
         )
         player = QueuedAudioPlayer(this@MusicService, mPlayerOptions)
         fakePlayer.release()
@@ -1150,6 +1154,11 @@ class MusicService : HeadlessJsMediaService() {
         const val ANDROID_AUDIO_CONTENT_TYPE = "androidAudioContentType"
         const val IS_FOCUS_LOSS_PERMANENT_KEY = "permanent"
         const val IS_PAUSED_KEY = "paused"
+
+        const val HANDLE_NOISY = "androidHandleAudioBecomingNoisy"
+        const val ALWAYS_SHOW_NEXT = "androidAlwaysShowNext"
+        const val SKIP_SILENCE = "androidSkipSilence"
+        const val WAKE_MODE = "androidWakeMode"
 
         const val AA_FOR_YOU_KEY = "for-you"
         const val AA_ROOT_KEY = "/"

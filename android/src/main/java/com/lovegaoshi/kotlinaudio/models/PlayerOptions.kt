@@ -14,7 +14,8 @@ data class PlayerOptions(
     val handleAudioFocus: Boolean = true,
     var alwaysPauseOnInterruption: Boolean = true,
     var repeatMode: RepeatMode = RepeatMode.ALL,
-    val bufferOptions: BufferOptions = BufferOptions(null, null, null, null)
+    val bufferOptions: BufferOptions = BufferOptions(null, null, null, null),
+    val skipSilence: Boolean = false,
 )
 
 data class BufferOptions (
