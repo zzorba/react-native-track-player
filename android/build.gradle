@@ -44,6 +44,12 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    if (rootProject.ext.has("native")) {
+        kotlinOptions {
+            // HACK: does RN auto sets to 17? or am i crazy?
+            jvmTarget = "1.8"
+        }
+    }
 }
 
 repositories {
@@ -60,10 +66,10 @@ repositories {
 
 dependencies {
     //noinspection GradleDynamicVersion
-    if (!rootProject.ext.has("native")) {
-        implementation "com.facebook.react:react-native:+"
-    } else {
+    if (rootProject.ext.has("native")) {
         implementation "com.facebook.react:react-android:+"
+    } else {
+        implementation "com.facebook.react:react-native:+"
     }
     // Make sure we're using androidx
     implementation "androidx.core:core-ktx:1.13.1"

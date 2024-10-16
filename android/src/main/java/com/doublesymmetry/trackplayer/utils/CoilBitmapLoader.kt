@@ -43,7 +43,7 @@ class CoilBitmapLoader @Inject constructor(
     }
 
     override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> = scope.future {
-        var bitmap: Bitmap? = null
+        val bitmap: Bitmap?
         val parsedUri = uri.toString()
         if (parsedUri.startsWith("file://")) {
             Log.d("APM", "getting embedded bitmap of ${parsedUri.substring(7)}")

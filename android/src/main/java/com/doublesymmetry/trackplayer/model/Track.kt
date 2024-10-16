@@ -1,5 +1,6 @@
 package com.doublesymmetry.trackplayer.model
 
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
@@ -41,10 +42,13 @@ class Track
             resourceId = null
             BundleUtils.getUri(context, bundle, "url")
         } else {
-            RawResourceDataSource.buildRawResourceUri(resourceId!!)
+            // RawResourceDataSource.buildRawResourceUri(resourceId!!)
+            Uri.Builder().scheme(ContentResolver.SCHEME_ANDROID_RESOURCE).path(Integer. toString(
+                resourceId!!
+            )).build()
         }
         val trackType = bundle.getString("type", "default")
-        for (t in MediaType.values()) {
+        for (t in MediaType.entries) {
             if (t.name.equals(trackType, ignoreCase = true)) {
                 type = t
                 break

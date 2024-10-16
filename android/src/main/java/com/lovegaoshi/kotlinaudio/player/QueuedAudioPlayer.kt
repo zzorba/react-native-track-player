@@ -13,7 +13,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class QueuedAudioPlayer(
-    context: Context,
+    private val context: Context,
     options: PlayerOptions = PlayerOptions()
 ) : AudioPlayer(context, options) {
     private val queue = LinkedList<MediaItem>()
@@ -86,7 +86,7 @@ class QueuedAudioPlayer(
         if (queue.isEmpty()) {
             add(item)
         } else {
-            exoPlayer.addMediaItem(currentIndex + 1, audioItem2MediaItem(item))
+            exoPlayer.addMediaItem(currentIndex + 1, audioItem2MediaItem(item, context))
             exoPlayer.removeMediaItem(currentIndex)
             exoPlayer.seekTo(currentIndex, C.TIME_UNSET);
             exoPlayer.prepare()
@@ -108,7 +108,7 @@ class QueuedAudioPlayer(
      * @param playWhenReady Whether playback starts automatically.
      */
     fun add(item: AudioItem) {
-        val mediaSource = audioItem2MediaItem(item)
+        val mediaSource = audioItem2MediaItem(item, context)
         queue.add(mediaSource)
         exoPlayer.addMediaItem(mediaSource)
         exoPlayer.prepare()
@@ -129,7 +129,7 @@ class QueuedAudioPlayer(
      * @param items The [AudioItem]s to add.
      */
     fun add(items: List<AudioItem>) {
-        val mediaSources = items.map { audioItem2MediaItem(it) }
+        val mediaSources = items.map { audioItem2MediaItem(it, context) }
         queue.addAll(mediaSources)
         exoPlayer.addMediaItems(mediaSources)
         exoPlayer.prepare()
@@ -142,7 +142,7 @@ class QueuedAudioPlayer(
      * @param atIndex  Index to insert items at, if no items loaded this will not automatically start playback.
      */
     fun add(items: List<AudioItem>, atIndex: Int) {
-        val mediaSources = items.map { audioItem2MediaItem(it) }
+        val mediaSources = items.map { audioItem2MediaItem(it, context) }
         queue.addAll(atIndex, mediaSources)
         exoPlayer.addMediaItems(atIndex, mediaSources)
         exoPlayer.prepare()
@@ -229,7 +229,7 @@ class QueuedAudioPlayer(
      * If updating current index, we update the notification metadata if [automaticallyUpdateNotificationMetadata] is true.
      */
     fun replaceItem(index: Int, item: AudioItem) {
-        val mediaSource = audioItem2MediaItem(item)
+        val mediaSource = audioItem2MediaItem(item, context)
         queue[index] = mediaSource
         exoPlayer.replaceMediaItem(index, mediaSource)
     }

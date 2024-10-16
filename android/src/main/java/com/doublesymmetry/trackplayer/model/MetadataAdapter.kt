@@ -33,30 +33,30 @@ sealed class MetadataAdapter {
 
                             when (entry.id.uppercase()) {
                                 "TIT2", "TT2" -> {
-                                    putString("title", entry.value)
+                                    putString("title", entry.values[0])
                                     rawEntry.putString("commonKey", "title")
                                 }
                                 "TALB", "TOAL", "TAL" -> {
-                                    putString("albumName", entry.value)
+                                    putString("albumName", entry.values[0])
                                     rawEntry.putString("commonKey", "albumName")
                                 }
                                 "TOPE", "TPE1", "TP1" -> {
-                                    putString("artist", entry.value)
+                                    putString("artist", entry.values[0])
                                     rawEntry.putString("commonKey", "artist")
                                 }
                                 "TDRC", "TOR" -> {
-                                    putString("creationDate", entry.value)
+                                    putString("creationDate", entry.values[0])
                                     rawEntry.putString("commonKey", "creationDate")
                                 }
                                 "TCON", "TCO" -> {
-                                    putString("genre", entry.value)
+                                    putString("genre", entry.values[0])
                                     rawEntry.putString("commonKey", "genre")
                                 }
                             }
 
                             rawEntry.putString("key", entry.id.uppercase())
                             rawEntry.putString("keySpace", "org.id3")
-                            rawEntry.putString("value", entry.value)
+                            rawEntry.putString("value", entry.values[0])
                             rawEntry.putString("time", "-1")
                             rawEntries.add(rawEntry)
                         }

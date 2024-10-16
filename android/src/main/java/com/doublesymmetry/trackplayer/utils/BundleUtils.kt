@@ -50,7 +50,7 @@ object BundleUtils {
         if (!data.containsKey(key)) return 0
         val obj = data[key] as? Bundle ?: return 0
         var name = obj.getString("uri")
-        if (name == null || name.isEmpty()) return 0
+        if (name.isNullOrEmpty()) return 0
         name = name.lowercase().replace("-", "_")
         return try {
             name.toInt()
@@ -59,7 +59,7 @@ object BundleUtils {
         }
     }
 
-    fun getIcon(context: Context, options: Bundle, propertyName: String, defaultIcon: Int): Int {
+    private fun getIcon(context: Context, options: Bundle, propertyName: String, defaultIcon: Int): Int {
         if (!options.containsKey(propertyName)) return defaultIcon
 
         val bundle = options.getBundle(propertyName) ?: return defaultIcon
@@ -108,14 +108,19 @@ object BundleUtils {
     fun setRating(data: Bundle, key: String?, rating: RatingCompat) {
         if (!rating.isRated) return
         val ratingType = rating.ratingStyle
-        if (ratingType == RatingCompat.RATING_HEART) {
-            data.putBoolean(key, rating.hasHeart())
-        } else if (ratingType == RatingCompat.RATING_THUMB_UP_DOWN) {
-            data.putBoolean(key, rating.isThumbUp)
-        } else if (ratingType == RatingCompat.RATING_PERCENTAGE) {
-            data.putDouble(key, rating.percentRating.toDouble())
-        } else {
-            data.putDouble(key, rating.starRating.toDouble())
+        when (ratingType) {
+            RatingCompat.RATING_HEART -> {
+                data.putBoolean(key, rating.hasHeart())
+            }
+            RatingCompat.RATING_THUMB_UP_DOWN -> {
+                data.putBoolean(key, rating.isThumbUp)
+            }
+            RatingCompat.RATING_PERCENTAGE -> {
+                data.putDouble(key, rating.percentRating.toDouble())
+            }
+            else -> {
+                data.putDouble(key, rating.starRating.toDouble())
+            }
         }
     }
 

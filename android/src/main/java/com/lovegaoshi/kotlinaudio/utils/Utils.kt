@@ -94,7 +94,7 @@ fun saveMediaCoverToPng(path: String?, contentResolver: ContentResolver, cacheKe
         val imageUri = getAPMCacheBitmapUri(contentResolver, contentValues)
         val bitmap = getEmbeddedBitmap(path) ?: return null
         cacheKeyG = cacheKey
-        var fos: OutputStream? = null
+        var fos: OutputStream?
 
         contentResolver.also { resolver ->
             fos = imageUri?.let { resolver.openOutputStream(it) }

@@ -203,7 +203,6 @@ abstract class AudioPlayer internal constructor(
             override fun addMediaItems(mediaItems: MutableList<MediaItem>) {
                 Log.d("APM", "override setMediaItem handling to RNTP2")
                 return
-                super.addMediaItems(mediaItems)
             }
 
             override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {

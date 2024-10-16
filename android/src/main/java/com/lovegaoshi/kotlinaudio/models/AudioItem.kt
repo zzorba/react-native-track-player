@@ -1,11 +1,13 @@
 package com.lovegaoshi.kotlinaudio.models
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.lovegaoshi.kotlinaudio.utils.getEmbeddedBitmapArray
+import com.lovegaoshi.kotlinaudio.utils.saveMediaCoverToPng
 import java.util.UUID
 
 
@@ -74,7 +76,7 @@ enum class MediaType(val value: String) {
 
 
 
-fun audioItem2MediaItem(audioItem: AudioItem): MediaItem {
+fun audioItem2MediaItem(audioItem: AudioItem, context: Context? = null): MediaItem {
     return MediaItem.Builder()
         .setMediaId(audioItem.mediaId ?: UUID.randomUUID().toString())
         .setUri(audioItem.audioUrl)
@@ -82,7 +84,16 @@ fun audioItem2MediaItem(audioItem: AudioItem): MediaItem {
             MediaMetadata.Builder()
             .setTitle(audioItem.title)
             .setArtist(audioItem.artist)
-            .setArtworkUri(Uri.parse(audioItem.artwork))
+            .setArtworkUri(Uri.parse(
+                if (context != null && audioItem.artwork?.startsWith("file://") == true) {
+                    saveMediaCoverToPng(
+                        audioItem.audioUrl,
+                        context.contentResolver,
+                        audioItem.mediaId ?: audioItem.audioUrl
+                    )
+                        ?: audioItem.artwork
+                }
+                else audioItem.artwork))
             .setArtworkData(if (audioItem.artwork?.startsWith("file://") == true) getEmbeddedBitmapArray(
                 audioItem.artwork!!.substring(7)) else null, MediaMetadata.PICTURE_TYPE_MEDIA)
             .setExtras(Bundle().apply {
