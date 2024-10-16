@@ -153,6 +153,10 @@ class MusicService : HeadlessJsMediaService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Timber.tag("APM").d("onStartCommand: ${intent?.action}, ${intent?.`package`}")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            // HACK: this is not supposed to be here. I definitely screwed up. but Why?
+            onMediaKeyEvent(intent)
+        }
         // HACK: Why is onPlay triggering onStartCommand??
         if (!commandStarted) {
             commandStarted = true
