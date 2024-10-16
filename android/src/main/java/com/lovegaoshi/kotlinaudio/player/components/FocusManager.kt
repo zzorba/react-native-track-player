@@ -45,7 +45,6 @@ class FocusManager (
 
     fun abandonAudioFocusIfHeld() {
         if (!hasAudioFocus) return
-        Log.d("APM", "Abandoning audio focus...")
 
         val manager = ContextCompat.getSystemService(context, AudioManager::class.java)
 

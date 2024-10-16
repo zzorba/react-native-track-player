@@ -46,7 +46,6 @@ class CoilBitmapLoader @Inject constructor(
         val bitmap: Bitmap?
         val parsedUri = uri.toString()
         if (parsedUri.startsWith("file://")) {
-            Log.d("APM", "getting embedded bitmap of ${parsedUri.substring(7)}")
             bitmap = getEmbeddedBitmap(parsedUri.substring(7))
         } else {
             var imgrequest = ImageRequest.Builder(context)

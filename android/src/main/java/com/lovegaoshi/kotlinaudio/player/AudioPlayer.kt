@@ -196,17 +196,17 @@ abstract class AudioPlayer internal constructor(
 
 
             override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
-                Log.d("APM", "override setMediaItem handling to RNTP")
+                // override setMediaItem handling to RNTP
                 return
             }
 
             override fun addMediaItems(mediaItems: MutableList<MediaItem>) {
-                Log.d("APM", "override setMediaItem handling to RNTP2")
+                // override setMediaItem handling to RNTP
                 return
             }
 
             override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {
-                Log.d("APM", "override setMediaItem handling to RNTP3")
+                // override setMediaItem handling to RNTP
                 return
             }
 
@@ -215,12 +215,12 @@ abstract class AudioPlayer internal constructor(
                 startIndex: Int,
                 startPositionMs: Long
             ) {
-                Log.d("APM", "override setMediaItem handling to RNTP4")
+                // override setMediaItem handling to RNTP
                 return
             }
 
             override fun setMediaItems(mediaItems: MutableList<MediaItem>) {
-                Log.d("APM", "override setMediaItem handling to RNTP5")
+                // override setMediaItem handling to RNTP
                 return
             }
             override fun isCommandAvailable(command: Int): Boolean {
@@ -300,7 +300,7 @@ abstract class AudioPlayer internal constructor(
     }
 
     override fun onAudioFocusChange(focusChange: Int) {
-        Log.d("APM","Audio focus changed")
+        // TODO: complete focusManager logic here
     }
 
     /**
