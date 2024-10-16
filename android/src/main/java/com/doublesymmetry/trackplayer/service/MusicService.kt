@@ -915,6 +915,53 @@ class MusicService : HeadlessJsMediaService() {
         super.onDestroy()
     }
 
+    fun onMediaKeyEvent(intent: Intent?): Boolean? {
+        val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+        } else {
+            intent?.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+        }
+
+        if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
+            return when (keyEvent.keyCode) {
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                    emit(MusicEvents.BUTTON_PLAY_PAUSE)
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_STOP -> {
+                    emit(MusicEvents.BUTTON_STOP)
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                    emit(MusicEvents.BUTTON_PAUSE)
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                    emit(MusicEvents.BUTTON_PLAY)
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                    emit(MusicEvents.BUTTON_SKIP_NEXT)
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                    emit(MusicEvents.BUTTON_SKIP_PREVIOUS)
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD, KeyEvent.KEYCODE_MEDIA_STEP_FORWARD -> {
+                    emit(MusicEvents.BUTTON_JUMP_FORWARD)
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD, KeyEvent.KEYCODE_MEDIA_STEP_BACKWARD -> {
+                    emit(MusicEvents.BUTTON_JUMP_BACKWARD)
+                    true
+                }
+                else -> null
+            }
+        }
+        return null
+    }
+
     @MainThread
     inner class MusicBinder : Binder() {
         val service = this@MusicService
@@ -1067,36 +1114,7 @@ class MusicService : HeadlessJsMediaService() {
             controllerInfo: MediaSession.ControllerInfo,
             intent: Intent
         ): Boolean {
-            val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-            } else {
-                intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
-            }
-            Timber.tag("APM").d("onMediaBtn: ${controllerInfo.packageName}, $intent, $keyEvent")
-
-            if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
-                when (keyEvent.keyCode) {
-                    KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                        emit(MusicEvents.BUTTON_SKIP_NEXT)
-                        return true
-                    }
-                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                        emit(MusicEvents.BUTTON_SKIP_PREVIOUS)
-                        return true
-                    }
-                    KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD, KeyEvent.KEYCODE_MEDIA_STEP_FORWARD -> {
-                        emit(MusicEvents.BUTTON_JUMP_FORWARD)
-                        return true
-                    }
-                    KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD, KeyEvent.KEYCODE_MEDIA_STEP_BACKWARD -> {
-                        emit(MusicEvents.BUTTON_JUMP_BACKWARD)
-                        return true
-                    }
-                    else -> {
-                    }
-                }
-            }
-            return super.onMediaButtonEvent(session, controllerInfo, intent)
+            return onMediaKeyEvent(intent) ?: super.onMediaButtonEvent(session, controllerInfo, intent)
         }
 
         override fun onGetSearchResult(
