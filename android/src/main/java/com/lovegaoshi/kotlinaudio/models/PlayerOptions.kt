@@ -7,7 +7,7 @@ import androidx.media3.common.util.UnstableApi
 
 data class PlayerOptions(
     val cacheSize: Long = 0,
-    val audioContentType: Int = 0,
+    val audioContentType: Int = C.AUDIO_CONTENT_TYPE_MUSIC,
     val wakeMode: Int = 0,
     val handleAudioBecomingNoisy: Boolean = true,
     val alwaysShowNext: Boolean = true,
@@ -26,16 +26,6 @@ data class BufferOptions (
     val backBuffer: Int?,
 
 )
-
-fun setContentType (type: Int = 0): Int {
-    return when (type) {
-        1 -> C.AUDIO_CONTENT_TYPE_SPEECH
-        2 -> C.AUDIO_CONTENT_TYPE_SONIFICATION
-        3 -> C.AUDIO_CONTENT_TYPE_MOVIE
-        4 -> C.AUDIO_CONTENT_TYPE_UNKNOWN
-        else -> C.AUDIO_CONTENT_TYPE_MUSIC
-    }
-}
 
 fun setWakeMode(type: Int = 0): Int {
     return when (type) {

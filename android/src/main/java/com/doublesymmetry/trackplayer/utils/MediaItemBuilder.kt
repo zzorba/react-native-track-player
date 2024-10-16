@@ -2,7 +2,6 @@ package com.doublesymmetry.trackplayer.utils
 
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 

@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Build
-import android.util.Log
 import androidx.media3.common.util.BitmapLoader
 import androidx.media3.common.util.Util.isBitmapFactorySupportedMimeType
 import androidx.media3.common.util.UnstableApi
@@ -20,7 +19,7 @@ import kotlinx.coroutines.guava.future
 import java.io.IOException
 import javax.inject.Inject
 
-// https://github.com/androidx/media/issuyarn staes/121
+// https://github.com/androidx/media/issues/121
 
 @UnstableApi
 class CoilBitmapLoader @Inject constructor(

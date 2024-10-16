@@ -2,7 +2,6 @@
 
 import android.content.Context
 import android.media.AudioManager
-import android.util.Log
 import androidx.annotation.CallSuper
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -29,7 +28,6 @@ import com.lovegaoshi.kotlinaudio.models.PlayWhenReadyChangeData
 import com.lovegaoshi.kotlinaudio.models.PlaybackError
 import com.lovegaoshi.kotlinaudio.models.PlayerOptions
 import com.lovegaoshi.kotlinaudio.models.PositionChangedReason
-import com.lovegaoshi.kotlinaudio.models.setContentType
 import com.lovegaoshi.kotlinaudio.models.setWakeMode
 import com.lovegaoshi.kotlinaudio.player.components.Cache
 import com.lovegaoshi.kotlinaudio.player.components.FocusManager
@@ -185,7 +183,7 @@ abstract class AudioPlayer internal constructor(
 
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
-            .setContentType(setContentType(options.audioContentType))
+            .setContentType(options.audioContentType)
             .build();
         exoPlayer.setAudioAttributes(audioAttributes, options.handleAudioFocus);
 
@@ -333,7 +331,7 @@ abstract class AudioPlayer internal constructor(
     var skipSilence: Boolean
         get() = exoPlayer.skipSilenceEnabled
         set(value) {
-            exoPlayer.skipSilenceEnabled = value;
+            exoPlayer.skipSilenceEnabled = value
         }
 
     fun play() {

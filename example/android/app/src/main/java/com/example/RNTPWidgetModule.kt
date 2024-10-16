@@ -18,7 +18,7 @@ class RNTPWidgetModule (private val reactContext: ReactApplicationContext) :
         val widgetManager = AppWidgetManager.getInstance(reactContext)
         val ids = widgetManager.getAppWidgetIds(ComponentName(reactContext, RNTPAppWidget::class.java))
         Log.d("APM", "sending widget update broadcast to $ids")
-        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
-        reactContext.sendBroadcast(intent);
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+        reactContext.sendBroadcast(intent)
     }
 }

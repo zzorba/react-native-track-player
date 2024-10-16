@@ -12,12 +12,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
-import android.util.Log
 import android.view.KeyEvent
 import androidx.annotation.MainThread
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
 import androidx.media.utils.MediaConstants
+import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CacheBitmapLoader
@@ -213,12 +213,12 @@ class MusicService : HeadlessJsMediaService() {
         val mPlayerOptions = PlayerOptions(
             cacheSize = playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong() ?: 0,
             audioContentType = when(playerOptions?.getString(ANDROID_AUDIO_CONTENT_TYPE)) {
-                "music" -> 0
-                "speech" -> 1
-                "sonification" -> 2
-                "movie" -> 3
-                "unknown" -> 4
-                else -> 0
+                "music" -> C.AUDIO_CONTENT_TYPE_MUSIC
+                "speech" -> C.AUDIO_CONTENT_TYPE_SPEECH
+                "sonification" -> C.AUDIO_CONTENT_TYPE_SONIFICATION
+                "movie" -> C.AUDIO_CONTENT_TYPE_MOVIE
+                "unknown" -> C.AUDIO_CONTENT_TYPE_UNKNOWN
+                else -> C.AUDIO_CONTENT_TYPE_MUSIC
             },
             wakeMode = playerOptions?.getInt(WAKE_MODE, 0) ?: 0,
             handleAudioBecomingNoisy = playerOptions?.getBoolean(HANDLE_NOISY, true) ?: true,
