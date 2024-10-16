@@ -50,7 +50,6 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     override fun initialize() {
-        Timber.plant(Timber.DebugTree())
         AppForegroundTracker.start()
     }
 
