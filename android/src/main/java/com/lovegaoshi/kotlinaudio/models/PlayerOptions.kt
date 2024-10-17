@@ -15,6 +15,7 @@ data class PlayerOptions(
     var alwaysPauseOnInterruption: Boolean = true,
     var repeatMode: RepeatMode = RepeatMode.ALL,
     val bufferOptions: BufferOptions = BufferOptions(null, null, null, null),
+    val parseEmbeddedArtwork: Boolean = false,
     val skipSilence: Boolean = false,
 )
 

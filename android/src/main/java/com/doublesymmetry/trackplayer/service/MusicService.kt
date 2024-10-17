@@ -214,6 +214,7 @@ class MusicService : HeadlessJsMediaService() {
         }
         Timber.tag("APM").d("RNTP musicservice set up")
         val mPlayerOptions = PlayerOptions(
+            parseEmbeddedArtwork = playerOptions?.getBoolean(PARSE_EMBEDDED_ARTWORK, false) ?: false,
             cacheSize = playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong() ?: 0,
             audioContentType = when(playerOptions?.getString(ANDROID_AUDIO_CONTENT_TYPE)) {
                 "music" -> C.AUDIO_CONTENT_TYPE_MUSIC
@@ -1191,6 +1192,7 @@ class MusicService : HeadlessJsMediaService() {
         const val IS_FOCUS_LOSS_PERMANENT_KEY = "permanent"
         const val IS_PAUSED_KEY = "paused"
 
+        const val PARSE_EMBEDDED_ARTWORK = "androidParseEmbeddedArtwork"
         const val HANDLE_NOISY = "androidHandleAudioBecomingNoisy"
         const val ALWAYS_SHOW_NEXT = "androidAlwaysShowNext"
         const val SKIP_SILENCE = "androidSkipSilence"

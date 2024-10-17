@@ -84,6 +84,14 @@ export interface PlayerOptions {
    */
   androidAudioContentType?: AndroidAudioContentType;
   /**
+   * parses embedded artwork on local files to a dedicated png path.
+   * This is only necessary for certain MediaBrowsers, namely Android Auto to
+   * read embedded artwork.
+   * @default false
+   */
+
+  androidParseEmbeddedArtwork?: boolean;
+  /**
    * auto pause playback when playback device changes from headset to speaker.
    * @default true
    */
