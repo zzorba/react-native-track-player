@@ -85,7 +85,7 @@ fun audioItem2MediaItem(audioItem: AudioItem, context: Context? = null): MediaIt
             .setTitle(audioItem.title)
             .setArtist(audioItem.artist)
             .setArtworkUri(Uri.parse(
-                if (context != null && audioItem.artwork?.startsWith("file://") == true) {
+                if (context != null && audioItem.audioUrl.startsWith("file://")) {
                     saveMediaCoverToPng(
                         audioItem.audioUrl,
                         context.contentResolver,
@@ -94,8 +94,8 @@ fun audioItem2MediaItem(audioItem: AudioItem, context: Context? = null): MediaIt
                         ?: audioItem.artwork
                 }
                 else audioItem.artwork))
-            .setArtworkData(if (audioItem.artwork?.startsWith("file://") == true) getEmbeddedBitmapArray(
-                audioItem.artwork!!.substring(7)) else null, MediaMetadata.PICTURE_TYPE_MEDIA)
+            .setArtworkData(if (audioItem.audioUrl.startsWith("file://")) getEmbeddedBitmapArray(
+                audioItem.audioUrl.substring(7)) else null, MediaMetadata.PICTURE_TYPE_MEDIA)
             .setExtras(Bundle().apply {
                 audioItem.options?.headers?.let {
                     putSerializable("headers", audioItem.options!!.headers)
