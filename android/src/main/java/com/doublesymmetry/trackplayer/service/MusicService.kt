@@ -102,7 +102,6 @@ class MusicService : HeadlessJsMediaService() {
         }
         mediaSession = MediaLibrarySession.Builder(this, fakePlayer, APMMediaSessionCallback() )
             .setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this)))
-            .setId("APM-MediaSession")
             // https://github.com/androidx/media/issues/1218
             .setSessionActivity(PendingIntent.getActivity(this, 0, openAppIntent, getPendingIntentFlags()))
             .build()
@@ -251,6 +250,9 @@ class MusicService : HeadlessJsMediaService() {
 
         if (androidOptions?.containsKey(AUDIO_OFFLOAD_KEY) == true) {
             player.setAudioOffload(androidOptions.getBoolean(AUDIO_OFFLOAD_KEY))
+        }
+        if (androidOptions?.containsKey(SKIP_SILENCE) == true) {
+            player.skipSilence = androidOptions.getBoolean(SKIP_SILENCE)
         }
 
         appKilledPlaybackBehavior =

@@ -25,4 +25,10 @@ export interface AndroidOptions {
    * https://developer.android.com/media/media3/exoplayer/track-selection#audioOffload
    */
   audioOffload?: boolean;
+
+  /**
+   * enables exoplayer's skipSilence parser
+   * @default false
+   */
+  androidSkipSilence?: boolean;
 }
