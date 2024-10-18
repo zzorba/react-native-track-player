@@ -160,51 +160,9 @@ class MusicService : HeadlessJsMediaService() {
         if (!commandStarted) {
             commandStarted = true
             super.onStartCommand(intent, flags, startId)
-            // HACK: this is due to MusicModule starts the service but not immediately starting the playback;
-            // thus the exception is thrown. the workaround is to not "start service" in MusicModule.
-            // however I found initiating playback via notification wont start this way
-            // ie. onStartCommand will not start. need to investigate further on why
-            startAndStopEmptyNotificationToAvoidANR()
         }
         return START_STICKY
     }
-
-    /**
-     * Workaround for the "Context.startForegroundService() did not then call Service.startForeground()"
-     * within 5s" ANR and crash by creating an empty notification and stopping it right after. For more
-     * information see https://github.com/doublesymmetry/react-native-track-player/issues/1666
-     */
-    private fun startAndStopEmptyNotificationToAvoidANR() {
-        Timber.tag("APM").d("startAndStopEmptyNotificationToAvoidANR")
-        val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationManager.createNotificationChannel(NotificationChannel(
-                getString(TrackPlayerR.string.rntp_temporary_channel_id),
-                getString(TrackPlayerR.string.rntp_temporary_channel_name),
-                NotificationManager.IMPORTANCE_LOW)
-            )
-        }
-
-        val notificationBuilder = NotificationCompat.Builder(this, getString(TrackPlayerR.string.rntp_temporary_channel_id))
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(Notification.CATEGORY_SERVICE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            notificationBuilder.foregroundServiceBehavior = NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
-        }
-        val notification = notificationBuilder.build()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(EMPTY_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-        } else {
-            startForeground(EMPTY_NOTIFICATION_ID, notification)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } else {
-            @Suppress("DEPRECATION")
-            stopForeground(true)
-        }
-    }
-
 
     @MainThread
     fun setupPlayer(playerOptions: Bundle?) {
