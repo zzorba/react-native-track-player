@@ -77,6 +77,11 @@ class MusicService : HeadlessJsMediaService() {
     private var customLayout: List<CommandButton> = listOf()
     private var lastWake: Long = 0
 
+    fun acquireWakeLock() { acquireWakeLockNow(this) }
+
+    fun abandonWakeLock() { sWakeLock?.release() }
+
+
     fun getBitmapLoader(): BitmapLoader {
         return mediaSession.bitmapLoader
     }

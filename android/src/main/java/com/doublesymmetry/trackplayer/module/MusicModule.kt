@@ -734,6 +734,21 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         callback.resolve(null)
     }
 
+    @ReactMethod
+    fun acquireWakeLock(callback: Promise) = launchInScope {
+        if (verifyServiceBoundOrReject(callback)) return@launchInScope
+        musicService.acquireWakeLock()
+        callback.resolve(null)
+    }
+
+    @ReactMethod
+    fun abandonWakeLock(callback: Promise) = launchInScope {
+        if (verifyServiceBoundOrReject(callback)) return@launchInScope
+        musicService.abandonWakeLock()
+        callback.resolve(null)
+    }
+
+
     // Bridgeless interop layer tries to pass the `Job` from `scope.launch` to the JS side
     // which causes an exception. We can work around this using a wrapper.
     private fun launchInScope(block: suspend () -> Unit) {

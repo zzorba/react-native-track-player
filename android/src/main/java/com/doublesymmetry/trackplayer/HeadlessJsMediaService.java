@@ -112,7 +112,7 @@
     */
    protected void startTask(final HeadlessJsTaskConfig taskConfig) {
      UiThreadUtil.assertOnUiThread();
-     acquireWakeLockNow(this);
+     // acquireWakeLockNow(this);
      final ReactInstanceManager reactInstanceManager =
          getReactNativeHost().getReactInstanceManager();
      ReactContext reactContext = reactInstanceManager.getCurrentReactContext();
@@ -163,7 +163,7 @@
        sWakeLock.release();
      }
    }
- 
+
    @Override
    public void onHeadlessJsTaskStart(int taskId) {}
  

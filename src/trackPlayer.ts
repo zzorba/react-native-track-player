@@ -734,3 +734,19 @@ export function setBrowseTreeStyle(
   TrackPlayer.setBrowseTreeStyle(browsableStyle, playableStyle);
   return null;
 }
+
+/**
+ * acquires the wake lock of MusicService (android only.)
+ */
+export async function acquireWakeLock() {
+  if (Platform.OS !== 'android') return;
+  TrackPlayer.acquireWakeLock();
+}
+
+/**
+ * acquires the wake lock of MusicService (android only.)
+ */
+export async function abandonWakeLock() {
+  if (Platform.OS !== 'android') return;
+  TrackPlayer.abandonWakeLock();
+}
