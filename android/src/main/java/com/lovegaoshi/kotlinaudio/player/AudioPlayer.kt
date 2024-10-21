@@ -41,14 +41,20 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 abstract class AudioPlayer internal constructor(
-    context: Context,
+    private val context: Context,
     val options: PlayerOptions = PlayerOptions()
 ) : AudioManager.OnAudioFocusChangeListener {
 
+    // for crossfading
+    var exoPlayer1: ExoPlayer
+    var player1: ForwardingPlayer
+    lateinit var exoPlayer2: ExoPlayer
+    lateinit var player2: ForwardingPlayer
+    var currentExoPlayer = true
     var exoPlayer: ExoPlayer
     var player: ForwardingPlayer
-    private var playerListener = PlayerListener()
-    private val scope = MainScope()
+    var playerListener = PlayerListener()
+    val scope = MainScope()
     private var cache: SimpleCache? = null
     val playerEventHolder = PlayerEventHolder()
     private val focusManager = FocusManager(context, listener=this, options=options)
@@ -147,6 +153,13 @@ abstract class AudioPlayer internal constructor(
 
     private var wasDucking = false
 
+    fun players (): List<ExoPlayer> {
+        if (options.crossfade) {
+            return listOf(exoPlayer)
+        }
+        return listOf(exoPlayer1, exoPlayer2)
+    }
+
     fun setAudioOffload(offload: Boolean = true) {
         val audioOffloadPreferences =
             TrackSelectionParameters.AudioOffloadPreferences.Builder()
@@ -164,12 +177,8 @@ abstract class AudioPlayer internal constructor(
                 .build()
     }
 
-    init {
-
-        if (options.cacheSize > 0) {
-            cache = Cache.initCache(context, options.cacheSize)
-        }
-        exoPlayer = ExoPlayer
+    private fun initExoPlayer(name: String): ExoPlayer {
+        val mPlayer = ExoPlayer
             .Builder(context)
             .setHandleAudioBecomingNoisy(options.handleAudioBecomingNoisy)
             .setMediaSourceFactory(MediaFactory(context, cache))
@@ -178,21 +187,20 @@ abstract class AudioPlayer internal constructor(
                 setLoadControl(setupBuffer(options.bufferOptions))
             }
             .setSkipSilenceEnabled(options.skipSilence)
-            .setName("APM-Player1")
+            .setName(name)
             .build()
 
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(options.audioContentType)
             .build();
-        exoPlayer.setAudioAttributes(audioAttributes, options.handleAudioFocus);
+        mPlayer.setAudioAttributes(audioAttributes, options.handleAudioFocus)
 
-        exoPlayer.addListener(playerListener)
-        playerEventHolder.updateAudioPlayerState(AudioPlayerState.IDLE)
+        return mPlayer
+    }
 
-        player = object : ForwardingPlayer(exoPlayer) {
-
-
+    private fun initForwardPlayer(mPlayer: ExoPlayer): ForwardingPlayer {
+        return object : ForwardingPlayer(mPlayer) {
             override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
                 // override setMediaItem handling to RNTP
                 return
@@ -241,7 +249,7 @@ abstract class AudioPlayer internal constructor(
                 }
                 return super.getAvailableCommands()
             }
-            
+
             override fun play() {
                 playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PLAY)
             }
@@ -297,6 +305,23 @@ abstract class AudioPlayer internal constructor(
         }
     }
 
+    init {
+        if (options.cacheSize > 0) {
+            cache = Cache.initCache(context, options.cacheSize)
+        }
+        playerEventHolder.updateAudioPlayerState(AudioPlayerState.IDLE)
+        exoPlayer1 = initExoPlayer("APM-Player1")
+        player1 = initForwardPlayer(exoPlayer1)
+        if (options.crossfade) {
+            exoPlayer2 = initExoPlayer("APM-Player2")
+            player2 = initForwardPlayer(exoPlayer2)
+        }
+        exoPlayer = exoPlayer1
+        exoPlayer.addListener(playerListener)
+        player = player1
+
+    }
+
     override fun onAudioFocusChange(focusChange: Int) {
         // TODO: complete focusManager logic here
     }
@@ -316,7 +341,7 @@ abstract class AudioPlayer internal constructor(
      * @param item The [AudioItem] to replace the current one.
      */
     open fun load(item: AudioItem) {
-        exoPlayer.addMediaItem(audioItem2MediaItem(item))
+        players().forEach { p -> p.addMediaItem(audioItem2MediaItem(item)) }
         exoPlayer.prepare()
     }
 
@@ -331,7 +356,7 @@ abstract class AudioPlayer internal constructor(
     var skipSilence: Boolean
         get() = exoPlayer.skipSilenceEnabled
         set(value) {
-            exoPlayer.skipSilenceEnabled = value
+            players().forEach { p -> p.skipSilenceEnabled = value }
         }
 
     fun play() {
@@ -365,7 +390,7 @@ abstract class AudioPlayer internal constructor(
 
     @CallSuper
     open fun clear() {
-        exoPlayer.clearMediaItems()
+        players().forEach { p -> p.clearMediaItems() }
     }
 
     /**
@@ -382,8 +407,11 @@ abstract class AudioPlayer internal constructor(
     open fun destroy() {
         focusManager.abandonAudioFocusIfHeld()
         stop()
-        exoPlayer.removeListener(playerListener)
-        exoPlayer.release()
+
+        players().forEach { p ->
+            p.removeListener(playerListener)
+            p.release()
+        }
         cache?.release()
         cache = null
     }
