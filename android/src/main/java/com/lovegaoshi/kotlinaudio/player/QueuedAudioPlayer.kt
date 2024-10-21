@@ -29,10 +29,6 @@ class QueuedAudioPlayer(
         else { mPlayer.seekToNextMediaItem() }
         mPlayer.prepare()
     }
-
-    fun crossFadeNext() { crossFadePrepare() }
-
-    fun crossFadePrevious() { crossFadePrepare(true) }
     
     fun switchExoPlayer(
         playerOperation: () -> Unit = ::next,

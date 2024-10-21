@@ -51,6 +51,7 @@ abstract class AudioPlayer internal constructor(
     lateinit var exoPlayer2: ExoPlayer
     lateinit var player2: ForwardingPlayer
     var currentExoPlayer = true
+
     var exoPlayer: ExoPlayer
     var player: ForwardingPlayer
     var playerListener = PlayerListener()

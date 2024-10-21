@@ -36,12 +36,15 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaBrowser
+import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
 import com.example.kotlinaudio.ui.component.ActionBottomSheet
 import com.example.kotlinaudio.ui.component.PlayerControls
 import com.example.kotlinaudio.ui.component.TrackDisplay
 import com.example.kotlinaudio.ui.theme.KotlinAudioTheme
 import com.google.common.util.concurrent.MoreExecutors
+import com.lovegaoshi.kotlinaudio.service.CROSSFADE_NEXT
+import com.lovegaoshi.kotlinaudio.service.CROSSFADE_NEXT_PREPARE
 import com.lovegaoshi.kotlinaudio.service.MusicService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -113,7 +116,12 @@ import kotlin.time.Duration.Companion.seconds
                                           browser.play()
                                       }
                         },
-                        onSeek = {  browser.seekTo(it) }
+                        onSeek = {  browser.seekTo(it) },
+                        onCustomAction1 = { },
+                        onCustomAction2 = { browser.sendCustomCommand(SessionCommand(
+                            CROSSFADE_NEXT_PREPARE, Bundle.EMPTY), Bundle.EMPTY)},
+                        onCustomAction3 = { browser.sendCustomCommand(SessionCommand(
+                            CROSSFADE_NEXT, Bundle.EMPTY), Bundle.EMPTY)},
                     )
                 }
                 player.addListener(object : androidx.media3.common.Player.Listener {
@@ -183,6 +191,9 @@ fun MainScreen(
     isPaused: Boolean,
     onTopBarAction: () -> Unit = {},
     onPlayPause: () -> Unit = {},
+    onCustomAction1: () -> Unit = {},
+    onCustomAction2: () -> Unit = {},
+    onCustomAction3: () -> Unit = {},
     onSeek: (Long) -> Unit = {},
 ) {
     Surface(
@@ -224,6 +235,15 @@ fun MainScreen(
                 onNext = onNext,
                 isPaused = isPaused,
                 onPlayPause = onPlayPause,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 60.dp)
+            )
+            PlayerControls(
+                onPrevious = onCustomAction1,
+                onNext = onCustomAction3,
+                isPaused = isPaused,
+                onPlayPause = onCustomAction2,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 60.dp)

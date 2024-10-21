@@ -9,11 +9,11 @@ import androidx.media3.session.SessionCommand
 data class CustomButton (
     val displayName: String = "",
     val iconRes: Int = 0,
-    val sessionCommand: String = "",
+    val sessionCommand: String? = null,
     val onLayout: Boolean = false,
     val commandButton: CommandButton = CommandButton.Builder(CommandButton.ICON_UNDEFINED)
         .setDisplayName(displayName)
         .setIconResId(iconRes)
-        .setSessionCommand(SessionCommand(sessionCommand, Bundle()))
+        .setSessionCommand(SessionCommand(sessionCommand ?: displayName, Bundle()))
         .build()
 )
