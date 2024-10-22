@@ -1,6 +1,7 @@
 @file: OptIn(UnstableApi::class) package com.lovegaoshi.kotlinaudio.player
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.IllegalSeekPositionException
@@ -31,8 +32,8 @@ class QueuedAudioPlayer(
     }
     
     fun switchExoPlayer(
-        playerOperation: () -> Unit = ::next,
-        fadeDuration: Long = 1500,
+        playerOperation: () -> Unit = ::play,
+        fadeDuration: Long = 2500,
         fadeInterval: Long = 20,
         fadeToVolume: Float = 1f
     ){
@@ -52,10 +53,7 @@ class QueuedAudioPlayer(
         }
         player.switchCrossFadePlayer()
         prevPlayer.setAudioAttributes(prevPlayer.audioAttributes, false)
-        val mPlayWhenReady = prevPlayer.playWhenReady
-        prevPlayer.playWhenReady = false
         exoPlayer.setAudioAttributes(exoPlayer.audioAttributes, options.handleAudioFocus)
-        exoPlayer.playWhenReady = mPlayWhenReady
         scope.launch {
             var fadeOutDuration = fadeDuration
             val volumeDiff = -prevPlayer.volume * fadeInterval / fadeOutDuration;
@@ -63,10 +61,11 @@ class QueuedAudioPlayer(
                 fadeOutDuration -= fadeInterval
                 prevPlayer.volume += volumeDiff
                 delay(fadeInterval)
+                Log.d("APM", "fade out...${prevPlayer.volume}, ${prevPlayer.playbackState}")
             }
             prevPlayer.volume = 0f
-            prevPlayer.playWhenReady = false
             prevPlayer.pause()
+            Log.d("APM", "fade out...${prevPlayer.volume}, ${prevPlayer.playbackState}")
         }
         scope.launch {
             exoPlayer.volume = 0f
@@ -78,6 +77,7 @@ class QueuedAudioPlayer(
                     fadeInDuration -= fadeInterval
                     exoPlayer.volume += volumeDiff
                     delay(fadeInterval)
+                    Log.d("APM", "fade in...${exoPlayer.volume}, ${exoPlayer.playbackState}")
                 }
             }
         }

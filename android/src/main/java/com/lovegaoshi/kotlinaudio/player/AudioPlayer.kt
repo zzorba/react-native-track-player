@@ -46,12 +46,12 @@ abstract class AudioPlayer internal constructor(
 
     // for crossfading
     var exoPlayer1: ExoPlayer
-    lateinit var exoPlayer2: ExoPlayer
+    var exoPlayer2: ExoPlayer
     var currentExoPlayer = true
 
     var exoPlayer: ExoPlayer
     var player: ForwardingPlayer
-    var playerListener = PlayerListener()
+    private var playerListener = PlayerListener()
     val scope = MainScope()
     private var cache: SimpleCache? = null
     val playerEventHolder = PlayerEventHolder()
@@ -197,112 +197,6 @@ abstract class AudioPlayer internal constructor(
         return mPlayer
     }
 
-    private fun initForwardPlayer(mPlayer1: ExoPlayer, mPlayer2: ExoPlayer): ForwardingPlayer {
-        return object : ForwardingPlayer(mPlayer1, mPlayer2) {
-            override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
-                // override setMediaItem handling to RNTP
-                return
-            }
-
-            override fun addMediaItems(mediaItems: MutableList<MediaItem>) {
-                // override setMediaItem handling to RNTP
-                return
-            }
-
-            override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {
-                // override setMediaItem handling to RNTP
-                return
-            }
-
-            override fun setMediaItems(
-                mediaItems: MutableList<MediaItem>,
-                startIndex: Int,
-                startPositionMs: Long
-            ) {
-                // override setMediaItem handling to RNTP
-                return
-            }
-
-            override fun setMediaItems(mediaItems: MutableList<MediaItem>) {
-                // override setMediaItem handling to RNTP
-                return
-            }
-            override fun isCommandAvailable(command: Int): Boolean {
-                if (options.alwaysShowNext) {
-                    return when (command) {
-                        COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> true
-                        COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> true
-                        else -> super.isCommandAvailable(command)
-                    }
-                }
-                return super.isCommandAvailable(command)
-            }
-
-            override fun getAvailableCommands(): Player.Commands {
-                if (options.alwaysShowNext) {
-                    return super.getAvailableCommands().buildUpon()
-                        .add(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-                        .add(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-                        .build()
-                }
-                return super.getAvailableCommands()
-            }
-
-            override fun play() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PLAY)
-            }
-
-            override fun pause() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PAUSE)
-            }
-
-            override fun seekToNext() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.NEXT)
-            }
-
-            override fun seekToNextMediaItem() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.NEXT)
-            }
-
-            override fun seekToPrevious() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PREVIOUS)
-            }
-
-            override fun seekToPreviousMediaItem() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PREVIOUS)
-            }
-
-            override fun seekForward() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.FORWARD)
-            }
-
-            override fun seekBack() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.REWIND)
-            }
-
-            override fun stop() {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.STOP)
-            }
-
-            override fun seekTo(mediaItemIndex: Int, positionMs: Long) {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(
-                    MediaSessionCallback.SEEK(
-                        positionMs
-                    )
-                )
-            }
-
-            override fun seekTo(positionMs: Long) {
-                playerEventHolder.updateOnPlayerActionTriggeredExternally(
-                    MediaSessionCallback.SEEK(
-                        positionMs
-                    )
-                )
-            }
-
-        }
-    }
-
     init {
         if (options.cacheSize > 0) {
             cache = Cache.initCache(context, options.cacheSize)
@@ -311,7 +205,7 @@ abstract class AudioPlayer internal constructor(
         exoPlayer1 = initExoPlayer("APM-Player1")
         exoPlayer2 = initExoPlayer("APM-Player2")
         exoPlayer = exoPlayer1
-        player = initForwardPlayer(exoPlayer1, exoPlayer2)
+        player = if (options.nativeExample) ExampleForwardingPlayer(exoPlayer1, exoPlayer2) else APMForwardingPlayer(exoPlayer1, exoPlayer2)
         player.addCrossFadeListener(playerListener)
 
     }
@@ -577,6 +471,119 @@ abstract class AudioPlayer internal constructor(
             playerEventHolder.updatePlaybackError(_playbackError)
             playbackError = _playbackError
             playerState = AudioPlayerState.ERROR
+        }
+    }
+
+
+    private open inner class ExampleForwardingPlayer
+        (val mPlayer1: ExoPlayer, val mPlayer2: ExoPlayer): ForwardingPlayer(mPlayer1, mPlayer2) {
+        override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
+            mPlayer1.setMediaItems(mediaItems, resetPosition)
+            mPlayer2.setMediaItems(mediaItems, resetPosition)
+        }
+        override fun isCommandAvailable(command: Int): Boolean {
+            if (options.alwaysShowNext) {
+                return when (command) {
+                    COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> true
+                    COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> true
+                    else -> super.isCommandAvailable(command)
+                }
+            }
+            return super.isCommandAvailable(command)
+        }
+
+        override fun getAvailableCommands(): Player.Commands {
+            if (options.alwaysShowNext) {
+                return super.getAvailableCommands().buildUpon()
+                    .add(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                    .add(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                    .build()
+            }
+            return super.getAvailableCommands()
+        }
+    }
+
+    private inner class APMForwardingPlayer
+        (mPlayer1: ExoPlayer, mPlayer2: ExoPlayer): ExampleForwardingPlayer(mPlayer1, mPlayer2) {
+        override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
+            // override setMediaItem handling to RNTP
+            return
+        }
+
+        override fun addMediaItems(mediaItems: MutableList<MediaItem>) {
+            // override setMediaItem handling to RNTP
+            return
+        }
+
+        override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {
+            // override setMediaItem handling to RNTP
+            return
+        }
+
+        override fun setMediaItems(
+            mediaItems: MutableList<MediaItem>,
+            startIndex: Int,
+            startPositionMs: Long
+        ) {
+            // override setMediaItem handling to RNTP
+            return
+        }
+
+        override fun setMediaItems(mediaItems: MutableList<MediaItem>) {
+            // override setMediaItem handling to RNTP
+            return
+        }
+
+        override fun play() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PLAY)
+        }
+
+        override fun pause() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PAUSE)
+        }
+
+        override fun seekToNext() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.NEXT)
+        }
+
+        override fun seekToNextMediaItem() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.NEXT)
+        }
+
+        override fun seekToPrevious() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PREVIOUS)
+        }
+
+        override fun seekToPreviousMediaItem() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.PREVIOUS)
+        }
+
+        override fun seekForward() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.FORWARD)
+        }
+
+        override fun seekBack() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.REWIND)
+        }
+
+        override fun stop() {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(MediaSessionCallback.STOP)
+        }
+
+        override fun seekTo(mediaItemIndex: Int, positionMs: Long) {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(
+                MediaSessionCallback.SEEK(
+                    positionMs
+                )
+            )
+        }
+
+        override fun seekTo(positionMs: Long) {
+            playerEventHolder.updateOnPlayerActionTriggeredExternally(
+                MediaSessionCallback.SEEK(
+                    positionMs
+                )
+            )
         }
     }
 }

@@ -39,7 +39,7 @@ class MusicService : MediaLibraryService() {
 
     private fun setupService(customActions: List<CustomButton> = arrayListOf()) {
 
-        player = QueuedAudioPlayer(this, PlayerOptions(crossfade = true))
+        player = QueuedAudioPlayer(this, PlayerOptions(crossfade = true, nativeExample = true, handleAudioFocus = false))
         mediaSession = MediaLibrarySession
             .Builder(this, player.player, CustomMediaSessionCallback(customActions))
             .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
@@ -83,8 +83,9 @@ class MusicService : MediaLibraryService() {
                 CROSSFADE_PREV -> { player.switchExoPlayer({ player.previous() }) }
                 CROSSFADE_NEXT_PREPARE -> { player.crossFadePrepare() }
                 CROSSFADE_NEXT -> {
-                    player.switchExoPlayer({ player.next() })
+                    player.switchExoPlayer()
                     mediaSession.player = player.player
+                    this@MusicService.onUpdateNotification(mediaSession, true)
                 }
             }
             return super.onCustomCommand(session, controller, customCommand, args)
