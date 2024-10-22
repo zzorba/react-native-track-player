@@ -33,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionCommand
@@ -43,6 +42,7 @@ import com.example.kotlinaudio.ui.component.PlayerControls
 import com.example.kotlinaudio.ui.component.TrackDisplay
 import com.example.kotlinaudio.ui.theme.KotlinAudioTheme
 import com.google.common.util.concurrent.MoreExecutors
+import com.lovegaoshi.kotlinaudio.player.ForwardingPlayer
 import com.lovegaoshi.kotlinaudio.service.CROSSFADE_NEXT
 import com.lovegaoshi.kotlinaudio.service.CROSSFADE_NEXT_PREPARE
 import com.lovegaoshi.kotlinaudio.service.MusicService
@@ -124,7 +124,7 @@ import kotlin.time.Duration.Companion.seconds
                             CROSSFADE_NEXT, Bundle.EMPTY), Bundle.EMPTY)},
                     )
                 }
-                player.addListener(object : androidx.media3.common.Player.Listener {
+                player.addCrossFadeListener(object : androidx.media3.common.Player.Listener {
                     override fun onEvents(player: androidx.media3.common.Player, events: androidx.media3.common.Player.Events){
                         if (events.containsAny(
                                 androidx.media3.common.Player.EVENT_MEDIA_METADATA_CHANGED)) {

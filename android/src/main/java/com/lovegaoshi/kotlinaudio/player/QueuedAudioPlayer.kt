@@ -44,19 +44,16 @@ class QueuedAudioPlayer(
         if (currentExoPlayer) {
             currentExoPlayer = false
             exoPlayer = exoPlayer2
-            player = player2
             prevPlayer = exoPlayer1
         } else {
             currentExoPlayer = true
             exoPlayer = exoPlayer1
-            player = player1
             prevPlayer = exoPlayer2
         }
-        prevPlayer.removeListener(playerListener)
+        player.switchCrossFadePlayer()
         prevPlayer.setAudioAttributes(prevPlayer.audioAttributes, false)
         val mPlayWhenReady = prevPlayer.playWhenReady
         prevPlayer.playWhenReady = false
-        exoPlayer.addListener(playerListener)
         exoPlayer.setAudioAttributes(exoPlayer.audioAttributes, options.handleAudioFocus)
         exoPlayer.playWhenReady = mPlayWhenReady
         scope.launch {

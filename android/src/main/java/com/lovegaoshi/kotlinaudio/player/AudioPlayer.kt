@@ -6,7 +6,6 @@ import androidx.annotation.CallSuper
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
-import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Metadata
@@ -47,9 +46,7 @@ abstract class AudioPlayer internal constructor(
 
     // for crossfading
     var exoPlayer1: ExoPlayer
-    var player1: ForwardingPlayer
     lateinit var exoPlayer2: ExoPlayer
-    lateinit var player2: ForwardingPlayer
     var currentExoPlayer = true
 
     var exoPlayer: ExoPlayer
@@ -200,8 +197,8 @@ abstract class AudioPlayer internal constructor(
         return mPlayer
     }
 
-    private fun initForwardPlayer(mPlayer: ExoPlayer): ForwardingPlayer {
-        return object : ForwardingPlayer(mPlayer) {
+    private fun initForwardPlayer(mPlayer1: ExoPlayer, mPlayer2: ExoPlayer): ForwardingPlayer {
+        return object : ForwardingPlayer(mPlayer1, mPlayer2) {
             override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
                 // override setMediaItem handling to RNTP
                 return
@@ -312,14 +309,10 @@ abstract class AudioPlayer internal constructor(
         }
         playerEventHolder.updateAudioPlayerState(AudioPlayerState.IDLE)
         exoPlayer1 = initExoPlayer("APM-Player1")
-        player1 = initForwardPlayer(exoPlayer1)
-        if (options.crossfade) {
-            exoPlayer2 = initExoPlayer("APM-Player2")
-            player2 = initForwardPlayer(exoPlayer2)
-        }
+        exoPlayer2 = initExoPlayer("APM-Player2")
         exoPlayer = exoPlayer1
-        exoPlayer.addListener(playerListener)
-        player = player1
+        player = initForwardPlayer(exoPlayer1, exoPlayer2)
+        player.addCrossFadeListener(playerListener)
 
     }
 
