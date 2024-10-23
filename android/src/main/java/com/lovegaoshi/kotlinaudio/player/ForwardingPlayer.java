@@ -45,6 +45,8 @@ import java.util.List;
 /**
  * A {@link Player} that forwards method calls to another {@link Player}. Applications can use this
  * class to suppress or modify specific operations, by overriding the respective methods.
+ * implements 2 exoplayers that enables crossfading. For maintenance, update as media3's Forwarding
+ * Player does.
  */
 @UnstableApi
 public class ForwardingPlayer implements Player {
@@ -55,6 +57,26 @@ public class ForwardingPlayer implements Player {
     private boolean currentPlayer = true;
     ArrayList<Listener> listeners = new ArrayList<>();
 
+    public void broadcastMediaItem() {
+        MediaItem currentMediaItem = player.getCurrentMediaItem();
+        if (currentMediaItem != null) {
+            // force trigger mediaEventChanged event
+            player.replaceMediaItem(
+                    player.getCurrentMediaItemIndex(),
+                    currentMediaItem
+                            .buildUpon()
+                            .setMediaMetadata(
+                                    currentMediaItem
+                                            .mediaMetadata
+                                            .buildUpon()
+                                            // use a deprecated field hoping noone will use
+                                            .setYear(currentMediaItem.hashCode())
+                                            .build()
+                            ).build()
+            );
+        }
+    }
+
     public Player switchCrossFadePlayer() {
         Player prevPlayer = currentPlayer ? player1 : player2;
         Player nextPlayer = currentPlayer ? player2 : player1;
@@ -63,23 +85,8 @@ public class ForwardingPlayer implements Player {
             prevPlayer.removeListener(new ForwardingListener(this, listener));
             nextPlayer.addListener(new ForwardingListener(this, listener));
         }
-        MediaItem currentMediaItem = nextPlayer.getCurrentMediaItem();
-        if (currentMediaItem != null) {
-            // force trigger mediaEventChanged event
-            nextPlayer.replaceMediaItem(
-                    nextPlayer.getCurrentMediaItemIndex(),
-                    currentMediaItem
-                            .buildUpon()
-                            .setMediaMetadata(
-                                    currentMediaItem
-                                            .mediaMetadata
-                                            .buildUpon()
-                                            .setYear(currentMediaItem.hashCode())
-                                            .build()
-                            ).build()
-            );
-        }
         this.player = nextPlayer;
+        broadcastMediaItem();
         currentPlayer = !currentPlayer;
         return this.player;
     }

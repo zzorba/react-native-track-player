@@ -22,7 +22,7 @@ class QueuedAudioPlayer(
 
     fun crossFadePrepare(previous: Boolean = false) {
         if (!options.crossfade) { return }
-        val mPlayer = if (currentExoPlayer) exoPlayer2 else exoPlayer1
+        val mPlayer = if (currentExoPlayer) exoPlayer2!! else exoPlayer1
         // align playing index
         mPlayer.seekTo(exoPlayer.currentMediaItemIndex, C.TIME_UNSET)
         if (previous) { mPlayer.seekToPreviousMediaItem() }
@@ -43,12 +43,12 @@ class QueuedAudioPlayer(
         val prevPlayer: Player
         if (currentExoPlayer) {
             currentExoPlayer = false
-            exoPlayer = exoPlayer2
+            exoPlayer = exoPlayer2!!
             prevPlayer = exoPlayer1
         } else {
             currentExoPlayer = true
             exoPlayer = exoPlayer1
-            prevPlayer = exoPlayer2
+            prevPlayer = exoPlayer2!!
         }
         prevPlayer.setAudioAttributes(prevPlayer.audioAttributes, false)
         player.switchCrossFadePlayer()
@@ -75,6 +75,7 @@ class QueuedAudioPlayer(
                     exoPlayer.volume += volumeDiff
                     delay(fadeInterval)
                 }
+                player.broadcastMediaItem()
             }
         }
     }

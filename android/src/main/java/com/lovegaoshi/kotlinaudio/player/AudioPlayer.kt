@@ -46,7 +46,7 @@ abstract class AudioPlayer internal constructor(
 
     // for crossfading
     var exoPlayer1: ExoPlayer
-    var exoPlayer2: ExoPlayer
+    var exoPlayer2: ExoPlayer? = null
     var currentExoPlayer = true
 
     var exoPlayer: ExoPlayer
@@ -156,7 +156,7 @@ abstract class AudioPlayer internal constructor(
         if (options.crossfade) {
             return listOf(exoPlayer)
         }
-        return listOf(exoPlayer1, exoPlayer2)
+        return listOf(exoPlayer1, exoPlayer2!!)
     }
 
     fun setAudioOffload(offload: Boolean = true) {
@@ -204,7 +204,7 @@ abstract class AudioPlayer internal constructor(
         }
         playerEventHolder.updateAudioPlayerState(AudioPlayerState.IDLE)
         exoPlayer1 = initExoPlayer("APM-Player1")
-        exoPlayer2 = initExoPlayer("APM-Player2")
+        if (options.crossfade) { exoPlayer2 = initExoPlayer("APM-Player2") }
         exoPlayer = exoPlayer1
         player = if (options.nativeExample) ExampleForwardingPlayer(exoPlayer1, exoPlayer2) else APMForwardingPlayer(exoPlayer1, exoPlayer2)
         player.addListener(playerListener)
@@ -473,10 +473,10 @@ abstract class AudioPlayer internal constructor(
 
 
     private open inner class ExampleForwardingPlayer
-        (val mPlayer1: ExoPlayer, val mPlayer2: ExoPlayer): ForwardingPlayer(mPlayer1, mPlayer2) {
+        (val mPlayer1: ExoPlayer, val mPlayer2: ExoPlayer?): ForwardingPlayer(mPlayer1, mPlayer2) {
         override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
             mPlayer1.setMediaItems(mediaItems, resetPosition)
-            mPlayer2.setMediaItems(mediaItems, resetPosition)
+            mPlayer2?.setMediaItems(mediaItems, resetPosition)
         }
         override fun isCommandAvailable(command: Int): Boolean {
             if (options.alwaysShowNext) {
@@ -501,7 +501,7 @@ abstract class AudioPlayer internal constructor(
     }
 
     private inner class APMForwardingPlayer
-        (mPlayer1: ExoPlayer, mPlayer2: ExoPlayer): ExampleForwardingPlayer(mPlayer1, mPlayer2) {
+        (mPlayer1: ExoPlayer, mPlayer2: ExoPlayer?): ExampleForwardingPlayer(mPlayer1, mPlayer2) {
         override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
             // override setMediaItem handling to RNTP
             return
