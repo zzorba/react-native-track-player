@@ -75,8 +75,8 @@ class QueuedAudioPlayer(
                     exoPlayer.volume += volumeDiff
                     delay(fadeInterval)
                 }
-                player.broadcastMediaItem()
             }
+            // player.broadcastMediaItem()
         }
     }
 

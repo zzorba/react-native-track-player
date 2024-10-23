@@ -21,6 +21,14 @@ export const PlayerControls: React.FC = () => {
         <TouchableWithoutFeedback onPress={performSkipToNext}>
           <FontAwesome6 name={'forward'} size={30} color={'white'} />
         </TouchableWithoutFeedback>
+        <TouchableWithoutFeedback
+          onPress={() => TrackPlayer.crossFadePrepare()}
+        >
+          <FontAwesome6 name={'rotate'} size={30} color={'white'} />
+        </TouchableWithoutFeedback>
+        <TouchableWithoutFeedback onPress={() => TrackPlayer.crossFade()}>
+          <FontAwesome6 name={'forward-fast'} size={30} color={'white'} />
+        </TouchableWithoutFeedback>
       </View>
       <PlaybackError
         error={'error' in playback ? playback.error.message : undefined}

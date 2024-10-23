@@ -77,10 +77,17 @@ class MusicService : HeadlessJsMediaService() {
     private var customLayout: List<CommandButton> = listOf()
     private var lastWake: Long = 0
 
+    fun crossFadePrepare(previous: Boolean = false) { player.crossFadePrepare(previous) }
+
+    fun switchExoPlayer(
+        fadeDuration: Long = 2500,
+        fadeInterval: Long = 20,
+        fadeToVolume: Float = 1f
+    ) { player.switchExoPlayer(fadeDuration = fadeDuration, fadeInterval = fadeInterval, fadeToVolume = fadeToVolume) }
+
     fun acquireWakeLock() { acquireWakeLockNow(this) }
 
     fun abandonWakeLock() { sWakeLock?.release() }
-
 
     fun getBitmapLoader(): BitmapLoader {
         return mediaSession.bitmapLoader
