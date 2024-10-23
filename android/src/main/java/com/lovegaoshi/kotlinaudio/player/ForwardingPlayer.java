@@ -55,23 +55,13 @@ public class ForwardingPlayer implements Player {
     private boolean currentPlayer = true;
     ArrayList<Listener> listeners = new ArrayList<>();
 
-    public void addCrossFadeListener(Listener listener) {
-        listeners.add(listener);
-        player.addListener(listener);
-    }
-
-    public void removeCrossFadeListener(Listener listener) {
-        listeners.remove(listener);
-        player.removeListener(listener);
-    }
-
     public Player switchCrossFadePlayer() {
         Player prevPlayer = currentPlayer ? player1 : player2;
         Player nextPlayer = currentPlayer ? player2 : player1;
 
         for (Listener listener : listeners) {
-            prevPlayer.removeListener(listener);
-            nextPlayer.addListener(listener);
+            prevPlayer.removeListener(new ForwardingListener(this, listener));
+            nextPlayer.addListener(new ForwardingListener(this, listener));
         }
 
         this.player = nextPlayer;
@@ -104,6 +94,7 @@ public class ForwardingPlayer implements Player {
      */
     @Override
     public void addListener(Listener listener) {
+        listeners.add(listener);
         player.addListener(new ForwardingListener(this, listener));
     }
 
@@ -116,6 +107,7 @@ public class ForwardingPlayer implements Player {
      */
     @Override
     public void removeListener(Listener listener) {
+        listeners.remove(listener);
         player.removeListener(new ForwardingListener(this, listener));
     }
 

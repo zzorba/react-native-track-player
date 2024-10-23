@@ -124,7 +124,7 @@ import kotlin.time.Duration.Companion.seconds
                             CROSSFADE_NEXT, Bundle.EMPTY), Bundle.EMPTY)},
                     )
                 }
-                player.addCrossFadeListener(object : androidx.media3.common.Player.Listener {
+                player.addListener(object : androidx.media3.common.Player.Listener {
                     override fun onEvents(player: androidx.media3.common.Player, events: androidx.media3.common.Player.Events){
                         if (events.containsAny(
                                 androidx.media3.common.Player.EVENT_MEDIA_METADATA_CHANGED)) {

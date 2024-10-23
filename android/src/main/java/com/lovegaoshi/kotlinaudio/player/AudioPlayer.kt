@@ -206,7 +206,7 @@ abstract class AudioPlayer internal constructor(
         exoPlayer2 = initExoPlayer("APM-Player2")
         exoPlayer = exoPlayer1
         player = if (options.nativeExample) ExampleForwardingPlayer(exoPlayer1, exoPlayer2) else APMForwardingPlayer(exoPlayer1, exoPlayer2)
-        player.addCrossFadeListener(playerListener)
+        player.addListener(playerListener)
 
     }
 
