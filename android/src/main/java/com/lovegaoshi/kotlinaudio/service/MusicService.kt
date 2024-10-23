@@ -39,7 +39,7 @@ class MusicService : MediaLibraryService() {
 
     private fun setupService(customActions: List<CustomButton> = arrayListOf()) {
 
-        player = QueuedAudioPlayer(this, PlayerOptions(crossfade = true, nativeExample = true, handleAudioFocus = false))
+        player = QueuedAudioPlayer(this, PlayerOptions(crossfade = true, nativeExample = true))
         mediaSession = MediaLibrarySession
             .Builder(this, player.player, CustomMediaSessionCallback(customActions))
             .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})

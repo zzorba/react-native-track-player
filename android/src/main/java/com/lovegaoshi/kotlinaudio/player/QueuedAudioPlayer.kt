@@ -1,7 +1,6 @@
 @file: OptIn(UnstableApi::class) package com.lovegaoshi.kotlinaudio.player
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.IllegalSeekPositionException
@@ -51,9 +50,8 @@ class QueuedAudioPlayer(
             exoPlayer = exoPlayer1
             prevPlayer = exoPlayer2
         }
-        player.switchCrossFadePlayer()
         prevPlayer.setAudioAttributes(prevPlayer.audioAttributes, false)
-        exoPlayer.setAudioAttributes(exoPlayer.audioAttributes, options.handleAudioFocus)
+        player.switchCrossFadePlayer()
         scope.launch {
             var fadeOutDuration = fadeDuration
             val volumeDiff = -prevPlayer.volume * fadeInterval / fadeOutDuration;
@@ -61,15 +59,14 @@ class QueuedAudioPlayer(
                 fadeOutDuration -= fadeInterval
                 prevPlayer.volume += volumeDiff
                 delay(fadeInterval)
-                Log.d("APM", "fade out...${prevPlayer.volume}, ${prevPlayer.playbackState}")
             }
             prevPlayer.volume = 0f
             prevPlayer.pause()
-            Log.d("APM", "fade out...${prevPlayer.volume}, ${prevPlayer.playbackState}")
         }
         scope.launch {
             exoPlayer.volume = 0f
             playerOperation()
+            exoPlayer.setAudioAttributes(exoPlayer.audioAttributes, options.handleAudioFocus)
             if (fadeToVolume > 0) {
                 var fadeInDuration = fadeDuration
                 val volumeDiff = fadeToVolume * fadeInterval / fadeInDuration;
@@ -77,7 +74,6 @@ class QueuedAudioPlayer(
                     fadeInDuration -= fadeInterval
                     exoPlayer.volume += volumeDiff
                     delay(fadeInterval)
-                    Log.d("APM", "fade in...${exoPlayer.volume}, ${exoPlayer.playbackState}")
                 }
             }
         }
