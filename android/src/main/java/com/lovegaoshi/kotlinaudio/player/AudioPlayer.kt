@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit
 abstract class AudioPlayer internal constructor(
     private val context: Context,
     val options: PlayerOptions = PlayerOptions()
-) : AudioManager.OnAudioFocusChangeListener {
+) {
 
     // for crossfading
     var exoPlayer1: ExoPlayer
@@ -55,7 +55,8 @@ abstract class AudioPlayer internal constructor(
     val scope = MainScope()
     private var cache: SimpleCache? = null
     val playerEventHolder = PlayerEventHolder()
-    private val focusManager = FocusManager(context, listener=this, options=options)
+    private val focusListener = APMFocusListener()
+    private val focusManager = FocusManager(context, listener=focusListener, options=options)
 
     var alwaysPauseOnInterruption: Boolean
         get() = focusManager.alwaysPauseOnInterruption
@@ -208,10 +209,6 @@ abstract class AudioPlayer internal constructor(
         player = if (options.nativeExample) ExampleForwardingPlayer(exoPlayer1, exoPlayer2) else APMForwardingPlayer(exoPlayer1, exoPlayer2)
         player.addListener(playerListener)
 
-    }
-
-    override fun onAudioFocusChange(focusChange: Int) {
-        // TODO: complete focusManager logic here
     }
 
     /**
@@ -584,6 +581,12 @@ abstract class AudioPlayer internal constructor(
                     positionMs
                 )
             )
+        }
+    }
+
+    private inner class APMFocusListener: AudioManager.OnAudioFocusChangeListener {
+        override fun onAudioFocusChange(focusChange: Int) {
+            // TODO: complete focusManager logic here
         }
     }
 }

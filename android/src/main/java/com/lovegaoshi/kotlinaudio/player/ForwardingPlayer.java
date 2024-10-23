@@ -63,7 +63,11 @@ public class ForwardingPlayer implements Player {
             prevPlayer.removeListener(new ForwardingListener(this, listener));
             nextPlayer.addListener(new ForwardingListener(this, listener));
         }
-
+        MediaItem currentMediaItem = nextPlayer.getCurrentMediaItem();
+        if (currentMediaItem != null) {
+            // trigger mediaEventChanged event
+            nextPlayer.replaceMediaItem(nextPlayer.getCurrentMediaItemIndex(), currentMediaItem);
+        }
         this.player = nextPlayer;
         currentPlayer = !currentPlayer;
         return this.player;
