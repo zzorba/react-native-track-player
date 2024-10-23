@@ -14,6 +14,8 @@ on Android this is built by 2 exoplayers rotating on crossfading. I copied the F
 
 RNTP keeps both players queue the same.
 
+To enable crossfading, setupPlayer with crossfade: true.
+
 You should first prepare the crossfading player well ahead of crossfading via `TP.crossFadePrepare(previous=true/false)`. This primes the rotating player's current media index to the current player's, then skip to next or previous, then prepare for playback.
 
 Then to perform crossfading, invoke TP.crossfade.
