@@ -154,9 +154,9 @@ abstract class AudioPlayer internal constructor(
 
     fun players (): List<ExoPlayer> {
         if (options.crossfade) {
-            return listOf(exoPlayer)
+            return listOf(exoPlayer1, exoPlayer2!!)
         }
-        return listOf(exoPlayer1, exoPlayer2!!)
+        return listOf(exoPlayer)
     }
 
     fun setAudioOffload(offload: Boolean = true) {
