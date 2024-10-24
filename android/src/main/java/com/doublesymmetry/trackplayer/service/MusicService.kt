@@ -77,10 +77,23 @@ class MusicService : HeadlessJsMediaService() {
     private var customLayout: List<CommandButton> = listOf()
     private var lastWake: Long = 0
 
+    fun crossFadePrepare(previous: Boolean = false) { player.crossFadePrepare(previous) }
+
+    fun switchExoPlayer(
+        fadeDuration: Long = 2500,
+        fadeInterval: Long = 20,
+        fadeToVolume: Float = 1f
+    ) {
+        player.switchExoPlayer(
+            fadeDuration = fadeDuration,
+            fadeInterval = fadeInterval,
+            fadeToVolume = fadeToVolume)
+        emitPlaybackTrackChangedEvents(null, null, 0.0)
+    }
+
     fun acquireWakeLock() { acquireWakeLockNow(this) }
 
     fun abandonWakeLock() { sWakeLock?.release() }
-
 
     fun getBitmapLoader(): BitmapLoader {
         return mediaSession.bitmapLoader
@@ -177,6 +190,7 @@ class MusicService : HeadlessJsMediaService() {
         }
         Timber.tag("APM").d("RNTP musicservice set up")
         val mPlayerOptions = PlayerOptions(
+            crossfade = playerOptions?.getBoolean(CROSSFADE, false) ?: false,
             parseEmbeddedArtwork = playerOptions?.getBoolean(PARSE_EMBEDDED_ARTWORK, false) ?: false,
             cacheSize = playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong() ?: 0,
             audioContentType = when(playerOptions?.getString(ANDROID_AUDIO_CONTENT_TYPE)) {
@@ -1157,6 +1171,7 @@ class MusicService : HeadlessJsMediaService() {
 
         const val PARSE_EMBEDDED_ARTWORK = "androidParseEmbeddedArtwork"
         const val HANDLE_NOISY = "androidHandleAudioBecomingNoisy"
+        const val CROSSFADE = "crossfade"
         const val ALWAYS_SHOW_NEXT = "androidAlwaysShowNext"
         const val SKIP_SILENCE = "androidSkipSilence"
         const val WAKE_MODE = "androidWakeMode"

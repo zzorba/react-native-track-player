@@ -133,4 +133,9 @@ export interface PlayerOptions {
    * Defaults to `false`.
    */
   autoHandleInterruptions?: boolean;
+  /**
+   * enables crossfade. android only.
+   * Defaults to `false`.
+   */
+  crossfade?: boolean;
 }

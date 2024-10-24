@@ -748,6 +748,27 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         callback.resolve(null)
     }
 
+    @ReactMethod
+    fun crossFadePrepare(previous: Boolean, callback: Promise) = launchInScope {
+        if (verifyServiceBoundOrReject(callback)) return@launchInScope
+        musicService.crossFadePrepare(previous)
+        callback.resolve(null)
+    }
+
+    @ReactMethod
+    fun switchExoPlayer(
+        fadeDuration: Int = 2500,
+        fadeInterval: Int = 20,
+        fadeToVolume: Float = 1f,
+        callback: Promise) = launchInScope {
+        if (verifyServiceBoundOrReject(callback)) return@launchInScope
+        musicService.switchExoPlayer(
+            fadeDuration = fadeDuration.toLong(),
+            fadeInterval = fadeInterval.toLong(),
+            fadeToVolume = fadeToVolume
+        )
+        callback.resolve(null)
+    }
 
     // Bridgeless interop layer tries to pass the `Job` from `scope.launch` to the JS side
     // which causes an exception. We can work around this using a wrapper.

@@ -23,10 +23,11 @@ import type {
 } from './interfaces';
 import resolveAssetSource from './resolveAssetSource';
 
-const emitter =
-  Platform.OS !== 'android'
-    ? new NativeEventEmitter(TrackPlayer)
-    : DeviceEventEmitter;
+const isAndroid = Platform.OS === 'android';
+
+const emitter = !isAndroid
+  ? new NativeEventEmitter(TrackPlayer)
+  : DeviceEventEmitter;
 
 const animatedVolume = new Animated.Value(1);
 
@@ -65,7 +66,7 @@ export async function setupPlayer(
   options: PlayerOptions = {},
   background = false
 ): Promise<void> {
-  return Platform.OS === 'android'
+  return isAndroid
     ? TrackPlayer.setupPlayer(options, background)
     : TrackPlayer.setupPlayer(options);
 }
@@ -74,7 +75,7 @@ export async function setupPlayer(
  * Register the playback service. The service will run as long as the player runs.
  */
 export function registerPlaybackService(factory: () => ServiceHandler) {
-  if (Platform.OS === 'android') {
+  if (isAndroid) {
     // Registers the headless task
     AppRegistry.registerHeadlessTask('TrackPlayer', factory);
   } else if (Platform.OS === 'web') {
@@ -401,7 +402,7 @@ export const setAnimatedVolume = async ({
   if (init !== -1) {
     TrackPlayer.setVolume(init);
   }
-  if (Platform.OS === 'android') {
+  if (isAndroid) {
     return TrackPlayer.setAnimatedVolume(volume, duration, interval, msg);
   } else {
     /*
@@ -434,7 +435,7 @@ export const setAnimatedVolume = async ({
  * @param interval interval of the fade progress in ms
  */
 export const fadeOutPause = async (duration = 500, interval = 20) => {
-  if (Platform.OS === 'android') {
+  if (isAndroid) {
     TrackPlayer.fadeOutPause(duration, interval);
   } else {
     setAnimatedVolume({
@@ -457,7 +458,7 @@ export const fadeOutNext = async (
   interval = 20,
   toVolume = 1
 ) => {
-  if (Platform.OS === 'android') {
+  if (isAndroid) {
     TrackPlayer.fadeOutNext(duration, interval, toVolume);
   } else {
     setAnimatedVolume({
@@ -487,7 +488,7 @@ export const fadeOutPrevious = async (
   interval = 20,
   toVolume = 1
 ) => {
-  if (Platform.OS === 'android') {
+  if (isAndroid) {
     TrackPlayer.fadeOutPrevious(duration, interval, toVolume);
   } else {
     setAnimatedVolume({
@@ -519,7 +520,7 @@ export const fadeOutJump = async (
   interval = 20,
   toVolume = 1
 ) => {
-  if (Platform.OS === 'android') {
+  if (isAndroid) {
     TrackPlayer.fadeOutJump(index, duration, interval, toVolume);
   } else {
     setAnimatedVolume({
@@ -704,7 +705,7 @@ export async function retry() {
 export async function setBrowseTree(
   browseTree: AndroidAutoBrowseTree
 ): Promise<string> {
-  if (Platform.OS !== 'android') return new Promise(() => '');
+  if (!isAndroid) return new Promise(() => '');
   return TrackPlayer.setBrowseTree(browseTree);
 }
 
@@ -716,7 +717,7 @@ export async function setBrowseTree(
  * @returns
  */
 export async function setPlaybackState(mediaID: string): Promise<void> {
-  if (Platform.OS !== 'android') return;
+  if (!isAndroid) return;
   TrackPlayer.setPlaybackState(mediaID);
 }
 
@@ -730,7 +731,7 @@ export function setBrowseTreeStyle(
   browsableStyle: AndroidAutoContentStyle,
   playableStyle: AndroidAutoContentStyle
 ): null {
-  if (Platform.OS !== 'android') return null;
+  if (!isAndroid) return null;
   TrackPlayer.setBrowseTreeStyle(browsableStyle, playableStyle);
   return null;
 }
@@ -739,7 +740,7 @@ export function setBrowseTreeStyle(
  * acquires the wake lock of MusicService (android only.)
  */
 export async function acquireWakeLock() {
-  if (Platform.OS !== 'android') return;
+  if (!isAndroid) return;
   TrackPlayer.acquireWakeLock();
 }
 
@@ -747,6 +748,31 @@ export async function acquireWakeLock() {
  * acquires the wake lock of MusicService (android only.)
  */
 export async function abandonWakeLock() {
-  if (Platform.OS !== 'android') return;
+  if (!isAndroid) return;
   TrackPlayer.abandonWakeLock();
+}
+
+/**
+ * prepare to crossfade (android only.) the crossfade alternate
+ * player will be automatically primed to the current player's index,
+ * then by previous = true or not, skip to previous or next. player
+ * will be prepared. its advised to call this well before actually performing
+ * crossfade so the resource can be prepared.
+ */
+export async function crossFadePrepare(previous = false) {
+  if (!isAndroid) return;
+  TrackPlayer.crossFadePrepare(previous);
+}
+
+/**
+ * perform crossfade (android only). fadeDuration and fadeInterval are both in ms.
+ * fadeToVolume is a float from 0-1.
+ */
+export async function crossFade(
+  fadeDuration = 2000,
+  fadeInterval = 20,
+  fadeToVolume = 1
+) {
+  if (!isAndroid) return;
+  TrackPlayer.switchExoPlayer(fadeDuration, fadeInterval, fadeToVolume);
 }

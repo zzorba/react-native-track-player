@@ -17,6 +17,8 @@ data class PlayerOptions(
     val bufferOptions: BufferOptions = BufferOptions(null, null, null, null),
     val parseEmbeddedArtwork: Boolean = false,
     val skipSilence: Boolean = false,
+    val crossfade: Boolean = false,
+    val nativeExample: Boolean = false,
 )
 
 data class BufferOptions (

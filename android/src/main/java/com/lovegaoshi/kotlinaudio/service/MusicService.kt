@@ -4,18 +4,22 @@ import android.content.Intent
 import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
+import com.google.common.util.concurrent.ListenableFuture
 import com.lovegaoshi.kotlinaudio.models.CustomButton
+import com.lovegaoshi.kotlinaudio.models.PlayerOptions
 import com.lovegaoshi.kotlinaudio.player.QueuedAudioPlayer
 
 class MusicService : MediaLibraryService() {
     private val binder = MusicBinder()
     lateinit var player: QueuedAudioPlayer
-    lateinit var mediaSession: MediaLibrarySession
+    private lateinit var mediaSession: MediaLibrarySession
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession =
         mediaSession
@@ -24,14 +28,20 @@ class MusicService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         // Service is immediately set up for the KA example.
-        setupService()
+        setupService(listOf(
+            CustomButton(displayName = CROSSFADE_PREV_PREPARE),
+            CustomButton(displayName = CROSSFADE_PREV),
+            CustomButton(displayName = CROSSFADE_NEXT_PREPARE),
+            CustomButton(displayName = CROSSFADE_NEXT),
+        ))
+        // setMediaNotificationProvider()
     }
 
     private fun setupService(customActions: List<CustomButton> = arrayListOf()) {
 
-        player = QueuedAudioPlayer(this)
+        player = QueuedAudioPlayer(this, PlayerOptions(crossfade = true, nativeExample = true))
         mediaSession = MediaLibrarySession
-            .Builder(this, player.exoPlayer, CustomMediaSessionCallback(customActions))
+            .Builder(this, player.player, CustomMediaSessionCallback(customActions))
             .setCustomLayout(customActions.filter { v -> v.onLayout }.map{ v -> v.commandButton})
             .setId("APM")
             .build()
@@ -60,17 +70,39 @@ class MusicService : MediaLibraryService() {
     @UnstableApi private inner class CustomMediaSessionCallback(
         val customActions: List<CustomButton>
     ) : MediaLibrarySession.Callback {
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle
+        ): ListenableFuture<SessionResult> {
+            Log.d("APM", "custom command triggered: ${customCommand.customAction}")
+            when (customCommand.customAction) {
+                CROSSFADE_PREV_PREPARE -> { player.crossFadePrepare(true) }
+                CROSSFADE_PREV -> { player.switchExoPlayer({ player.previous() }) }
+                CROSSFADE_NEXT_PREPARE -> { player.crossFadePrepare() }
+                CROSSFADE_NEXT -> {
+                    player.switchExoPlayer()
+                    mediaSession.player = player.player
+                    this@MusicService.onUpdateNotification(mediaSession, true)
+                }
+            }
+            return super.onCustomCommand(session, controller, customCommand, args)
+        }
+
         // Configure commands available to the controller in onConnect()
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
-            var sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+            val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
             customActions.forEach{
-                v -> sessionCommands = sessionCommands.add(SessionCommand(v.sessionCommand, Bundle.EMPTY))
+                v -> v.commandButton.sessionCommand?.let { sessionCommands.add(it) }
             }
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                 .setAvailableSessionCommands(sessionCommands.build())
+                .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
                 .build()
         }
     }
@@ -88,3 +120,8 @@ class MusicService : MediaLibraryService() {
         }
     }
 }
+
+const val CROSSFADE_PREV_PREPARE = "crossfade prev prepare"
+const val CROSSFADE_PREV = "crossfade prev"
+const val CROSSFADE_NEXT_PREPARE = "crossfade next prepare"
+const val CROSSFADE_NEXT = "crossfade next"
