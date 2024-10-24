@@ -8,8 +8,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.lovegaoshi.kotlinaudio.models.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -19,66 +17,6 @@ class QueuedAudioPlayer(
     options: PlayerOptions = PlayerOptions()
 ) : AudioPlayer(context, options) {
     private val queue = LinkedList<MediaItem>()
-
-    fun crossFadePrepare(previous: Boolean = false) {
-        if (!options.crossfade) { return }
-        val mPlayer = if (currentExoPlayer) exoPlayer2!! else exoPlayer1
-        // align playing index
-        mPlayer.seekTo(exoPlayer.currentMediaItemIndex, C.TIME_UNSET)
-        if (previous) { mPlayer.seekToPreviousMediaItem() }
-        else { mPlayer.seekToNextMediaItem() }
-        mPlayer.prepare()
-    }
-    
-    fun switchExoPlayer(
-        playerOperation: () -> Unit = ::play,
-        fadeDuration: Long = 2500,
-        fadeInterval: Long = 20,
-        fadeToVolume: Float = 1f
-    ){
-        if (!options.crossfade) {
-            playerOperation()
-            return
-        }
-        val prevPlayer: Player
-        if (currentExoPlayer) {
-            currentExoPlayer = false
-            exoPlayer = exoPlayer2!!
-            prevPlayer = exoPlayer1
-        } else {
-            currentExoPlayer = true
-            exoPlayer = exoPlayer1
-            prevPlayer = exoPlayer2!!
-        }
-        prevPlayer.setAudioAttributes(prevPlayer.audioAttributes, false)
-        player.switchCrossFadePlayer()
-        scope.launch {
-            var fadeOutDuration = fadeDuration
-            val volumeDiff = -prevPlayer.volume * fadeInterval / fadeOutDuration;
-            while (fadeOutDuration > 0) {
-                fadeOutDuration -= fadeInterval
-                prevPlayer.volume += volumeDiff
-                delay(fadeInterval)
-            }
-            prevPlayer.volume = 0f
-            prevPlayer.pause()
-        }
-        scope.launch {
-            exoPlayer.volume = 0f
-            playerOperation()
-            exoPlayer.setAudioAttributes(exoPlayer.audioAttributes, options.handleAudioFocus)
-            if (fadeToVolume > 0) {
-                var fadeInDuration = fadeDuration
-                val volumeDiff = fadeToVolume * fadeInterval / fadeInDuration;
-                while (fadeInDuration > 0) {
-                    fadeInDuration -= fadeInterval
-                    exoPlayer.volume += volumeDiff
-                    delay(fadeInterval)
-                }
-            }
-            // player.broadcastMediaItem()
-        }
-    }
 
     private fun parseAudioItem(audioItem: AudioItem): MediaItem {
         return audioItem2MediaItem(audioItem, if (options.parseEmbeddedArtwork) context else null)

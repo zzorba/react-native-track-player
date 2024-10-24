@@ -15,7 +15,6 @@ import androidx.media3.common.Player.Listener
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.cache.SimpleCache
-import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import com.lovegaoshi.kotlinaudio.event.PlayerEventHolder
@@ -38,6 +37,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -47,14 +47,14 @@ abstract class AudioPlayer internal constructor(
 ) {
 
     // for crossfading
-    var exoPlayer1: ExoPlayer
-    var exoPlayer2: ExoPlayer? = null
-    var currentExoPlayer = true
+    private var exoPlayer1: ExoPlayer
+    private var exoPlayer2: ExoPlayer? = null
+    private var currentExoPlayer = true
 
     var exoPlayer: ExoPlayer
     var player: ForwardingPlayer
     private var playerListener = PlayerListener()
-    val scope = MainScope()
+    private val scope = MainScope()
     private var cache: SimpleCache? = null
     val playerEventHolder = PlayerEventHolder()
     private val focusListener = APMFocusListener()
@@ -314,6 +314,66 @@ abstract class AudioPlayer internal constructor(
     open fun seekBy(offset: Long, unit: TimeUnit) {
         val positionMs = exoPlayer.currentPosition + TimeUnit.MILLISECONDS.convert(offset, unit)
         exoPlayer.seekTo(positionMs)
+    }
+
+    fun crossFadePrepare(previous: Boolean = false) {
+        if (!options.crossfade) { return }
+        val mPlayer = if (currentExoPlayer) exoPlayer2!! else exoPlayer1
+        // align playing index
+        mPlayer.seekTo(exoPlayer.currentMediaItemIndex, C.TIME_UNSET)
+        if (previous) { mPlayer.seekToPreviousMediaItem() }
+        else { mPlayer.seekToNextMediaItem() }
+        mPlayer.prepare()
+    }
+
+    fun switchExoPlayer(
+        playerOperation: () -> Unit = ::play,
+        fadeDuration: Long = 2500,
+        fadeInterval: Long = 20,
+        fadeToVolume: Float = 1f
+    ){
+        if (!options.crossfade) {
+            playerOperation()
+            return
+        }
+        val prevPlayer: Player
+        if (currentExoPlayer) {
+            currentExoPlayer = false
+            exoPlayer = exoPlayer2!!
+            prevPlayer = exoPlayer1
+        } else {
+            currentExoPlayer = true
+            exoPlayer = exoPlayer1
+            prevPlayer = exoPlayer2!!
+        }
+        prevPlayer.setAudioAttributes(prevPlayer.audioAttributes, false)
+        player.switchCrossFadePlayer()
+        scope.launch {
+            var fadeOutDuration = fadeDuration
+            val volumeDiff = -prevPlayer.volume * fadeInterval / fadeOutDuration
+            while (fadeOutDuration > 0) {
+                fadeOutDuration -= fadeInterval
+                prevPlayer.volume += volumeDiff
+                delay(fadeInterval)
+            }
+            prevPlayer.volume = 0f
+            prevPlayer.pause()
+        }
+        scope.launch {
+            exoPlayer.volume = 0f
+            playerOperation()
+            exoPlayer.setAudioAttributes(exoPlayer.audioAttributes, options.handleAudioFocus)
+            if (fadeToVolume > 0) {
+                var fadeInDuration = fadeDuration
+                val volumeDiff = fadeToVolume * fadeInterval / fadeInDuration
+                while (fadeInDuration > 0) {
+                    fadeInDuration -= fadeInterval
+                    exoPlayer.volume += volumeDiff
+                    delay(fadeInterval)
+                }
+            }
+            // player.broadcastMediaItem()
+        }
     }
 
     inner class PlayerListener : Listener {
