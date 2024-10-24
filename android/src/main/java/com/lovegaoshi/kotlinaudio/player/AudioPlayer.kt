@@ -15,6 +15,8 @@ import androidx.media3.common.Player.Listener
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.cache.SimpleCache
+import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import com.lovegaoshi.kotlinaudio.event.PlayerEventHolder
 import com.lovegaoshi.kotlinaudio.models.AudioItem
@@ -177,8 +179,11 @@ abstract class AudioPlayer internal constructor(
     }
 
     private fun initExoPlayer(name: String): ExoPlayer {
+        val renderer = DefaultRenderersFactory(context)
+        renderer.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
         val mPlayer = ExoPlayer
             .Builder(context)
+            .setRenderersFactory(renderer)
             .setHandleAudioBecomingNoisy(options.handleAudioBecomingNoisy)
             .setMediaSourceFactory(MediaFactory(context, cache))
             .setWakeMode(setWakeMode(options.wakeMode))
