@@ -8,6 +8,10 @@ Make sure to read through [Google's guidelines](https://developer.android.com/tr
 
 See the example app and [Podverse's PR](https://github.com/podverse/podverse-rn/pull/1928) as examples adding Android Auto support to an existing RNTP app.
 
+## Concept
+
+You can see how my idea went to implementation in [this discussion](https://github.com/doublesymmetry/react-native-track-player/discussions/1984). In short, the HeadlessJsTaskService in RN's repository is copied out and manually tuned to extend MediaLibraryService instead of Service.
+
 ## RN Version Compatibility
 
 HeadlessJsTaskService.java does change across RN versions, for example from RN 0.71. RNTP's HeadlessJsTaskService will use whatever compatible with the most recent RN version. You may need to manually edit HeadlessJsMediaService.java to make it compatible with your current RN version. See [Podverse's RNTP fork](https://github.com/lovegaoshi/react-native-track-player/tree/dev-podverse-aa) that uses RN 0.66.
@@ -66,7 +70,7 @@ Android Auto requires 3 events to be handled: `Event.RemotePlayId` `Event.Remote
 
 Since media3, MusicService is now automatically started by the system/MediaLibraryService and allows a better headless implementation. This may be applicable to the old exoplayer2 implementation, but I'm not bothered to check. What's important is now MusicService will wake the js entry point, executes everything in index.js, but do NOT render the view. Thus any registered callbacks work (eg. registerHeadlessTask), but hooks do not.
 
-For a clean headless start implementation, the app initialization and specifically PlayFromSearch and PlayFromMediaId events have to be handled outside of a hook. Please refer to (APM's PR)[https://github.com/lovegaoshi/azusa-player-mobile/pull/566] for an example.
+For a clean headless start implementation, the app initialization and specifically PlayFromSearch and PlayFromMediaId events have to be handled outside of a hook. Please refer to [APM's PR](https://github.com/lovegaoshi/azusa-player-mobile/pull/566) for an example.
 
 Below is the old wake Activity implementation.
 
