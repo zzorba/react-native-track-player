@@ -23,6 +23,10 @@ import type { PlaybackAnimatedVolumeChangedEvent } from './PlaybackAnimatedVolum
 import type { RemoteBrowseEvent } from './RemoteBrowseEvent';
 import type { RemoteCustomActionEvent } from './RemoteCustomActionEvent';
 import type { PlaybackResumeEvent } from './PlaybackResumeEvent';
+import type {
+  ControllerConnectedEvent,
+  ControllerDisconnectedEvent,
+} from './ControllerConnectedEvent';
 
 export type EventPayloadByEvent = {
   [Event.PlayerError]: PlayerErrorEvent;
@@ -58,6 +62,8 @@ export type EventPayloadByEvent = {
   [Event.MetadataChapterReceived]: AudioMetadataReceivedEvent;
   [Event.MetadataTimedReceived]: AudioMetadataReceivedEvent;
   [Event.MetadataCommonReceived]: AudioCommonMetadataReceivedEvent;
+  [Event.connectorConnected]: ControllerConnectedEvent;
+  [Event.connectorDisconnected]: ControllerDisconnectedEvent;
 };
 
 // eslint-disable-next-line

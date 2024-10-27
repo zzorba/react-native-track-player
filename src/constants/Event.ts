@@ -151,4 +151,14 @@ export enum Event {
    * See https://rntp.dev/docs/api/events#commonmetadatareceived
    **/
   MetadataCommonReceived = 'metadata-common-received',
+  /**
+   * Fired when an android connector connects to MusicService.
+   * typical controllers are media notification and Android Auto.
+   **/
+  connectorConnected = 'android-controller-connected',
+  /**
+   * Fired when an android connector connects to MusicService.
+   * typical controllers are media notification and Android Auto.
+   **/
+  connectorDisconnected = 'android-controller-disconnected',
 }

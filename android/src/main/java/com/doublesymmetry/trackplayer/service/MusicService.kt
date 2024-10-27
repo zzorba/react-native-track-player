@@ -958,6 +958,15 @@ class MusicService : HeadlessJsMediaService() {
         private val rootItem = buildMediaItem(title = "root", mediaId = AA_ROOT_KEY, isPlayable = false)
         private val forYouItem = buildMediaItem(title = "For You", mediaId = AA_FOR_YOU_KEY, isPlayable = false)
 
+        override fun onDisconnected(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ) {
+            emit(MusicEvents.CONNECTOR_DISCONNECTED, Bundle().apply {
+                putString("package", controller.packageName)
+            })
+            super.onDisconnected(session, controller)
+        }
         // Configure commands available to the controller in onConnect()
         @OptIn(UnstableApi::class)
         override fun onConnect(
@@ -965,7 +974,15 @@ class MusicService : HeadlessJsMediaService() {
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
             Timber.tag("APM").d("connection via: ${controller.packageName}")
-
+            val isMediaNotificationController = session.isMediaNotificationController(controller)
+            val isAutomotiveController = session.isAutomotiveController(controller)
+            val isAutoCompanionController = session.isAutoCompanionController(controller)
+            emit(MusicEvents.CONNECTOR_CONNECTED, Bundle().apply {
+                putString("package", controller.packageName)
+                putBoolean("isMediaNotificationController", isMediaNotificationController)
+                putBoolean("isAutomotiveController", isAutomotiveController)
+                putBoolean("isAutoCompanionController", isAutoCompanionController)
+            })
             if (controller.packageName in arrayOf(
                     "com.android.systemui",
                     // https://github.com/googlesamples/android-media-controller
@@ -979,9 +996,9 @@ class MusicService : HeadlessJsMediaService() {
                 }
             }
             return if (
-                session.isMediaNotificationController(controller) ||
-                session.isAutomotiveController(controller) ||
-                session.isAutoCompanionController(controller)
+                isMediaNotificationController ||
+                isAutomotiveController ||
+                isAutoCompanionController
             ) {
                 MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                     .setCustomLayout(customLayout)

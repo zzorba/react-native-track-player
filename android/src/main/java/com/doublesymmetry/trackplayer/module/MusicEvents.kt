@@ -57,6 +57,8 @@ class MusicEvents(private val reactContext: ReactContext) : BroadcastReceiver() 
 
         // Other
         const val PLAYER_ERROR = "player-error"
+        const val CONNECTOR_CONNECTED = "android-controller-connected"
+        const val CONNECTOR_DISCONNECTED = "android-controller-disconnected"
 
         const val EVENT_INTENT = "com.doublesymmetry.trackplayer.event"
     }
