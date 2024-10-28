@@ -31,4 +31,10 @@ export interface AndroidOptions {
    * @default false
    */
   androidSkipSilence?: boolean;
+
+  /**
+   * enables exoplayer's shuffle mode
+   * @default false
+   */
+  shuffle?: boolean;
 }

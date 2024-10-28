@@ -41,6 +41,12 @@ class QueuedAudioPlayer(
     val currentIndex
         get() = exoPlayer.currentMediaItemIndex
 
+    var shuffleMode
+        get() = exoPlayer.shuffleModeEnabled
+        set(v) {
+            players().forEach{ p -> p.shuffleModeEnabled = v }
+        }
+
     override val currentItem: AudioItem?
         get() = mediaItem2AudioItem(queue.getOrNull(currentIndex))
 

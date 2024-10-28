@@ -248,6 +248,7 @@ class MusicService : HeadlessJsMediaService() {
         }
 
         player.alwaysPauseOnInterruption = androidOptions?.getBoolean(PAUSE_ON_INTERRUPTION_KEY) ?: false
+        player.shuffleMode = androidOptions?.getBoolean(SHUFFLE_KEY) ?: false
 
         // setup progress update events if configured
         progressUpdateJob?.cancel()
@@ -1178,6 +1179,7 @@ class MusicService : HeadlessJsMediaService() {
         const val STOPPING_APP_PAUSES_PLAYBACK_KEY = "stoppingAppPausesPlayback"
         const val APP_KILLED_PLAYBACK_BEHAVIOR_KEY = "appKilledPlaybackBehavior"
         const val AUDIO_OFFLOAD_KEY = "audioOffload"
+        const val SHUFFLE_KEY = "shuffle"
         const val STOP_FOREGROUND_GRACE_PERIOD_KEY = "stopForegroundGracePeriod"
         const val PAUSE_ON_INTERRUPTION_KEY = "alwaysPauseOnInterruption"
         const val AUTO_UPDATE_METADATA = "autoUpdateMetadata"
