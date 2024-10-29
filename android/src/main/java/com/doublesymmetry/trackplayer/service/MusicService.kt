@@ -764,8 +764,7 @@ class MusicService : HeadlessJsMediaService() {
     @SuppressLint("VisibleForTests")
     @MainThread
     fun emit(event: String, data: Bundle? = null) {
-        reactNativeHost.reactInstanceManager.currentReactContext
-            ?.emitDeviceEvent(event, data?.let { Arguments.fromBundle(it) })
+        reactContext.emitDeviceEvent(event, data?.let { Arguments.fromBundle(it) })
     }
 
     @SuppressLint("VisibleForTests")
@@ -774,8 +773,7 @@ class MusicService : HeadlessJsMediaService() {
         val payload = Arguments.createArray()
         data.forEach { payload.pushMap(Arguments.fromBundle(it)) }
 
-        reactNativeHost.reactInstanceManager.currentReactContext
-            ?.emitDeviceEvent(event, payload)
+        reactContext.emitDeviceEvent(event, payload)
     }
 
     override fun getTaskConfig(intent: Intent?): HeadlessJsTaskConfig {
