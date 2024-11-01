@@ -156,7 +156,7 @@
    @Override
    public void onHeadlessJsTaskFinish(int taskId) {
      mActiveTasks.remove(taskId);
-     if (mActiveTasks.size() == 0) {
+     if (mActiveTasks.isEmpty()) {
        stopSelf();
      }
    }

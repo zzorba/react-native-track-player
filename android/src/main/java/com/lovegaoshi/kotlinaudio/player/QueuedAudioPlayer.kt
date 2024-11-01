@@ -16,10 +16,13 @@ class QueuedAudioPlayer(
     private val context: Context,
     options: PlayerOptions = PlayerOptions()
 ) : AudioPlayer(context, options) {
+
+    var parseEmbeddedArtwork: Boolean = false
+
     private val queue = LinkedList<MediaItem>()
 
     private fun parseAudioItem(audioItem: AudioItem): MediaItem {
-        return audioItem2MediaItem(audioItem, if (options.parseEmbeddedArtwork) context else null)
+        return audioItem2MediaItem(audioItem, if (parseEmbeddedArtwork) context else null)
     }
 
     var repeatMode: RepeatMode

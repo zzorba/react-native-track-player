@@ -191,7 +191,6 @@ class MusicService : HeadlessJsMediaService() {
         Timber.tag("APM").d("RNTP musicservice set up")
         val mPlayerOptions = PlayerOptions(
             crossfade = playerOptions?.getBoolean(CROSSFADE, false) ?: false,
-            parseEmbeddedArtwork = playerOptions?.getBoolean(PARSE_EMBEDDED_ARTWORK, false) ?: false,
             cacheSize = playerOptions?.getDouble(MAX_CACHE_SIZE_KEY)?.toLong() ?: 0,
             audioContentType = when(playerOptions?.getString(ANDROID_AUDIO_CONTENT_TYPE)) {
                 "music" -> C.AUDIO_CONTENT_TYPE_MUSIC
@@ -226,6 +225,9 @@ class MusicService : HeadlessJsMediaService() {
         latestOptions = options
         val androidOptions = options.getBundle(ANDROID_OPTIONS_KEY)
 
+        if (androidOptions?.containsKey(PARSE_EMBEDDED_ARTWORK) == true) {
+            player.parseEmbeddedArtwork = androidOptions.getBoolean(PARSE_EMBEDDED_ARTWORK)
+        }
         if (androidOptions?.containsKey(AUDIO_OFFLOAD_KEY) == true) {
             player.setAudioOffload(androidOptions.getBoolean(AUDIO_OFFLOAD_KEY))
         }
