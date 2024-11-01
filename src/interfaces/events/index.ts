@@ -15,3 +15,4 @@ export * from './RemoteSeekEvent';
 export * from './RemoteSetRatingEvent';
 export * from './RemoteSkipEvent';
 export * from './RemoteBrowseEvent';
+export * from './ControllerConnectedEvent';
