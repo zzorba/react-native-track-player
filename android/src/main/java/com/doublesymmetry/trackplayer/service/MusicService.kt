@@ -123,7 +123,8 @@ class MusicService : HeadlessJsMediaService() {
             // https://github.com/androidx/media/issues/1218
             .setSessionActivity(PendingIntent.getActivity(this, 0, openAppIntent, getPendingIntentFlags()))
             .build()
-        reactHost.start().waitForCompletion()
+        // HACK: fix this for headless start. devManager causes an ANR.
+        //reactHost.start().waitForCompletion()
         super.onCreate()
     }
 
