@@ -126,13 +126,10 @@
      headlessJsTaskContext.addTaskEventListener(this);
  
      UiThreadUtil.runOnUiThread(
-         new Runnable() {
-           @Override
-           public void run() {
-             int taskId = headlessJsTaskContext.startTask(taskConfig);
-             mActiveTasks.add(taskId);
-           }
-         });
+             () -> {
+               int taskId = headlessJsTaskContext.startTask(taskConfig);
+               mActiveTasks.add(taskId);
+             });
    }
  
    @Override
@@ -182,6 +179,7 @@
         return ((ReactApplication) getApplication()).getReactHost();
     }
 
+    @SuppressLint("VisibleForTests")
     protected ReactContext getReactContext() {
         if (DefaultNewArchitectureEntryPoint.getBridgelessEnabled()) {
             ReactHost reactHost = getReactHost();
@@ -196,21 +194,9 @@
 
 
     private void createReactContextAndScheduleTask(final HeadlessJsTaskConfig taskConfig) {
-        final ReactHost reactHost = getReactHost();
 
-        if (reactHost == null) { // old arch
-            final ReactInstanceManager reactInstanceManager = getReactNativeHost().getReactInstanceManager();
-
-            reactInstanceManager.addReactInstanceEventListener(
-                    new ReactInstanceEventListener() {
-                        @Override
-                        public void onReactContextInitialized(@NonNull ReactContext reactContext) {
-                            invokeStartTask(reactContext, taskConfig);
-                            reactInstanceManager.removeReactInstanceEventListener(this);
-                        }
-                    });
-            reactInstanceManager.createReactContextInBackground();
-        } else { // new arch
+        if (DefaultNewArchitectureEntryPoint.getBridgelessEnabled()) { // new arch
+            final ReactHost reactHost = getReactHost();
             reactHost.addReactInstanceEventListener(
                     new ReactInstanceEventListener() {
                         @Override
@@ -221,6 +207,19 @@
                     }
             );
             reactHost.start();
+        } else { // old arch
+            final ReactInstanceManager reactInstanceManager =
+                    getReactNativeHost().getReactInstanceManager();
+
+            reactInstanceManager.addReactInstanceEventListener(
+                    new ReactInstanceEventListener() {
+                        @Override
+                        public void onReactContextInitialized(@NonNull ReactContext reactContext) {
+                            invokeStartTask(reactContext, taskConfig);
+                            reactInstanceManager.removeReactInstanceEventListener(this);
+                        }
+                    });
+            reactInstanceManager.createReactContextInBackground();
         }
     }
  }

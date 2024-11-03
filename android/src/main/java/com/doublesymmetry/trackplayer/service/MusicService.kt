@@ -768,7 +768,7 @@ class MusicService : HeadlessJsMediaService() {
     @SuppressLint("VisibleForTests")
     @MainThread
     fun emit(event: String, data: Bundle? = null) {
-        reactContext.emitDeviceEvent(event, data?.let { Arguments.fromBundle(it) })
+        reactContext?.emitDeviceEvent(event, data?.let { Arguments.fromBundle(it) })
     }
 
     @SuppressLint("VisibleForTests")
@@ -777,7 +777,7 @@ class MusicService : HeadlessJsMediaService() {
         val payload = Arguments.createArray()
         data.forEach { payload.pushMap(Arguments.fromBundle(it)) }
 
-        reactContext.emitDeviceEvent(event, payload)
+        reactContext?.emitDeviceEvent(event, payload)
     }
 
     override fun getTaskConfig(intent: Intent?): HeadlessJsTaskConfig {
@@ -844,7 +844,7 @@ class MusicService : HeadlessJsMediaService() {
 
     @SuppressLint("VisibleForTests")
     private fun selfWake(clientPackageName: String): Boolean {
-        val reactActivity = reactNativeHost.reactInstanceManager.currentReactContext?.currentActivity
+        val reactActivity = reactContext?.currentActivity
         if (
         // HACK: validate reactActivity is present; if not, send wake intent
             (reactActivity == null || reactActivity.isDestroyed)
