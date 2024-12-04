@@ -12,7 +12,9 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
-import androidx.media3.datasource.RawResourceDataSource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.OutputStream
 
 fun isUriLocalFile(uri: Uri?): Boolean {
@@ -91,20 +93,21 @@ fun saveMediaCoverToPng(path: String?, contentResolver: ContentResolver, cacheKe
             put(MediaStore.MediaColumns.RELATIVE_PATH, bitmapCoverDir)
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
-        val imageUri = getAPMCacheBitmapUri(contentResolver, contentValues)
+        val imageUri = getAPMCacheBitmapUri(contentResolver, contentValues) ?: return null
         val bitmap = getEmbeddedBitmap(path) ?: return null
         cacheKeyG = cacheKey
-        var fos: OutputStream?
+        CoroutineScope(Dispatchers.IO).launch {
+            var fos: OutputStream?
 
-        contentResolver.also { resolver ->
-            fos = imageUri?.let { resolver.openOutputStream(it) }
+            contentResolver.also { resolver ->
+                fos = imageUri.let { resolver.openOutputStream(it) }
+            }
+            // TODO: add error handling
+            fos?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 70, it) }
+            contentValues.clear()
+            contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
+            contentResolver.update(imageUri, contentValues, null, null)
         }
-        // TODO: add error handling
-        if (imageUri == null) return null
-        fos?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 70, it) }
-        contentValues.clear()
-        contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
-        contentResolver.update(imageUri, contentValues, null, null)
         return imageUri.toString()
     }
     return null;
