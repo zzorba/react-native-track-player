@@ -59,7 +59,7 @@ class CoilBitmapLoader @Inject constructor(
             bitmap = (response.drawable as? BitmapDrawable)?.bitmap
 
         }
-        bitmap ?: throw IOException("Unable to load bitmap: $uri")
+        bitmap ?: Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565)
 
     }
 }
